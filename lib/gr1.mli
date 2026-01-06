@@ -31,5 +31,5 @@ val to_promela_ltl : t -> string
     formula in the form: (assumptions) -> (guarantees)
 
     The GR(1) formula is structured as:
-    - Assumptions: init ∧ \[\]safety ∧ ∧ᵢ \[\]<>liveness_i
-    - Guarantees: init ∧ \[\]safety ∧ ∧ᵢ \[\]<>liveness_i *)
+    - Assumptions: init ∧ ☐safety ∧ ∧ᵢ ☐◇liveness_i
+    - Guarantees: init ∧ ☐safety ∧ ∧ᵢ ☐◇liveness_i *)
