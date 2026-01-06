@@ -11,6 +11,13 @@ val make :
   gnt_liveness:Term.term list ->
   t
 
+val asm_init : t -> Term.term
+val asm_safety : t -> Term.term list
+val asm_liveness : t -> Term.term list
+val gnt_init : t -> Term.term
+val gnt_safety : t -> Term.term list
+val gnt_liveness : t -> Term.term list
+
 val term_to_smv : ?indent:int -> Term.term -> string
 (** [term_to_smv term] converts a Why3 term to SMV LTL syntax.
 

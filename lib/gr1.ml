@@ -14,6 +14,13 @@ let make ~asm_init ~asm_safety ~asm_liveness ~gnt_init ~gnt_safety ~gnt_liveness
     =
   { asm_init; asm_safety; asm_liveness; gnt_init; gnt_safety; gnt_liveness }
 
+let asm_init t = t.asm_init
+let asm_safety t = t.asm_safety
+let asm_liveness t = t.asm_liveness
+let gnt_init t = t.gnt_init
+let gnt_safety t = t.gnt_safety
+let gnt_liveness t = t.gnt_liveness
+
 let rec term_to_smv ?(indent = 0) (term : Term.term) : string =
   let ind = String.make (indent * 2) ' ' in
   match term.t_node with
