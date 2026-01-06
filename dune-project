@@ -19,7 +19,7 @@
  (name gr1-weaken)
  (synopsis "A short synopsis")
  (description "A longer description")
- (depends ocaml)
+ (depends ocaml (why3 (>= 1.8.0)))
  (tags
   ("add topics" "to describe" your project)))
 

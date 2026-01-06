@@ -12,6 +12,7 @@ bug-reports: "https://github.com/benmandrew/gr1-weaken/issues"
 depends: [
   "dune" {>= "3.20"}
   "ocaml"
+  "why3" {>= "1.8.0"}
   "odoc" {with-doc}
 ]
 build: [
