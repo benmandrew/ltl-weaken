@@ -1,13 +1,7 @@
 open Core
-open Why3
 open Gr1_weaken
 
-let make_var name =
-  let id = Ident.id_fresh name in
-  let ty = Ty.ty_bool in
-  Term.create_vsymbol id ty
-
-let%expect_test "Parse nuXmv xml" =
+let%expect_test "Parse nuXmv lasso" =
   let xml =
     {|
         <?xml version="1.0" encoding="UTF-8"?>
@@ -31,10 +25,15 @@ let%expect_test "Parse nuXmv xml" =
         </counter-example>
         |}
   in
-  let terms = Cex.parse_xml_to_terms xml in
-  List.iter terms ~f:(fun t -> print_endline (Gr1.term_to_smv t));
+  let lasso = Cex.parse_lasso xml in
+  printf "Prefix:\n";
+  List.iter lasso.prefix ~f:(fun t -> printf "  %s\n" (Gr1.term_to_smv t));
+  printf "Loop:\n";
+  List.iter lasso.loop ~f:(fun t -> printf "  %s\n" (Gr1.term_to_smv t));
   [%expect {|
-    !(p)
-    p
-    p
+    Prefix:
+      !(p)
+    Loop:
+      p
+      p
     |}]

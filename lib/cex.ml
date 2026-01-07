@@ -1,6 +1,6 @@
 open Core
 
-type state = (string * bool) list
+type 'a lasso = { prefix : 'a list; loop : 'a list }
 
 let parse_bool s =
   match String.uppercase (String.strip s) with
@@ -14,15 +14,9 @@ let child_elems x = Xml.children x
 let text_of_element x =
   match Xml.children x with
   | [ y ] -> Xml.to_string y
-  | ys ->
-      (* Fallback: concat textual children *)
-      String.concat ~sep:"" (List.map ys ~f:Xml.to_string)
+  | ys -> String.concat ~sep:"" (List.map ys ~f:Xml.to_string)
 
-let parse_states (xml_str : string) : state list =
-  let root = Xml.parse_string xml_str in
-  if not (tag_is "counter-example" root) then
-    invalid_arg "Expected <counter-example> root";
-  let nodes = List.filter (child_elems root) ~f:(tag_is "node") in
+let parse_states_from_xml (nodes : Xml.xml list) : (string * bool) list list =
   List.filter_map nodes ~f:(fun node ->
       match List.find (child_elems node) ~f:(tag_is "state") with
       | None -> None
@@ -36,10 +30,25 @@ let parse_states (xml_str : string) : state list =
           in
           Some pairs)
 
-let terms_of_states ?cache (sts : state list) : Why3.Term.term list =
-  let cache =
-    match cache with Some t -> t | None -> Hashtbl.create (module String)
-  in
+let extract_loop_point (root : Xml.xml) : int =
+  match
+    List.find (child_elems root) ~f:(fun x ->
+        match Xml.children x with
+        | [ Xml.PCData _ ] -> tag_is "loops" x
+        | _ -> false)
+  with
+  | Some loops_elem -> (
+      try text_of_element loops_elem |> String.strip |> Int.of_string
+      with _ -> invalid_arg "Invalid <loops> value")
+  | None -> invalid_arg "<loops> tag not found"
+
+let lasso_of_states (states : (string * bool) list list) (loop_point : int) :
+    Why3.Term.term lasso =
+  (* Split states into prefix and loop *)
+  let state_prefix = List.take states (loop_point - 1) in
+  let state_loop = List.drop states (loop_point - 1) in
+  (* Convert states to terms using shared cache *)
+  let cache = Hashtbl.create (module String) in
   let prop_of name =
     match Hashtbl.find cache name with
     | Some ps -> ps
@@ -56,6 +65,17 @@ let terms_of_states ?cache (sts : state list) : Why3.Term.term list =
     | [] -> Why3.Term.t_true
     | x :: xs -> List.fold_left xs ~init:x ~f:Why3.Term.t_and
   in
-  List.map sts ~f:(fun assigns -> assigns |> List.map ~f:lit_of |> conj)
+  let state_to_term assigns = assigns |> List.map ~f:lit_of |> conj in
+  {
+    prefix = List.map state_prefix ~f:state_to_term;
+    loop = List.map state_loop ~f:state_to_term;
+  }
 
-let parse_xml_to_terms ?cache xml = parse_states xml |> terms_of_states ?cache
+let parse_lasso (xml_str : string) : Why3.Term.term lasso =
+  let root = Xml.parse_string xml_str in
+  if not (tag_is "counter-example" root) then
+    invalid_arg "Expected <counter-example> root";
+  let nodes = List.filter (child_elems root) ~f:(tag_is "node") in
+  let states = parse_states_from_xml nodes in
+  let loop_point = extract_loop_point root in
+  lasso_of_states states loop_point
