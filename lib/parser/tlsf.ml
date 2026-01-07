@@ -30,10 +30,6 @@ let parse_formulas (section : string list) : string list =
   |> List.map ~f:String.strip
   |> List.filter ~f:(fun s -> not (String.is_empty s))
 
-let conj = function
-  | [] -> Term.t_true
-  | x :: xs -> List.fold_left xs ~init:x ~f:Term.t_and
-
 (** Parse a standard TLSF GR(1) specification. *)
 let parse_gr1 (input : string) : Gr1.t =
   (* Extract MAIN { ... } block *)
@@ -91,7 +87,7 @@ let parse_gr1 (input : string) : Gr1.t =
   let parse_formula_list = List.map ~f:Smv.parse_formula in
 
   (* Map TLSF sections to GR(1) *)
-  let asm_init = initially @ preset |> parse_formula_list |> conj in
+  let asm_init = initially @ preset |> parse_formula_list |> Term.t_and_l in
   let asm_safety = require |> parse_formula_list in
   let asm_liveness = assume |> parse_formula_list in
   let gnt_init = Term.t_true in

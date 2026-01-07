@@ -1,4 +1,8 @@
+(* Why3 contains an internal Xml module that conflicts with Xml_light *)
 open Core
+module Xml_light = Xml
+open Why3
+module Xml = Xml_light
 
 type 'a lasso = { prefix : 'a list; loop : 'a list }
 
@@ -43,7 +47,7 @@ let extract_loop_point (root : Xml.xml) : int =
   | None -> invalid_arg "<loops> tag not found"
 
 let lasso_of_states (states : (string * bool) list list) (loop_point : int) :
-    Why3.Term.term lasso =
+    Term.term lasso =
   (* Split states into prefix and loop *)
   let state_prefix = List.take states (loop_point - 1) in
   let state_loop = List.drop states (loop_point - 1) in
@@ -53,25 +57,21 @@ let lasso_of_states (states : (string * bool) list list) (loop_point : int) :
     match Hashtbl.find cache name with
     | Some ps -> ps
     | None ->
-        let ps = Why3.Term.create_psymbol (Why3.Ident.id_fresh name) [] in
+        let ps = Term.create_psymbol (Ident.id_fresh name) [] in
         Hashtbl.set cache ~key:name ~data:ps;
         ps
   in
   let lit_of (name, value) =
-    let atom = Why3.Term.ps_app (prop_of name) [] in
-    if value then atom else Why3.Term.t_not atom
+    let atom = Term.ps_app (prop_of name) [] in
+    if value then atom else Term.t_not atom
   in
-  let conj = function
-    | [] -> Why3.Term.t_true
-    | x :: xs -> List.fold_left xs ~init:x ~f:Why3.Term.t_and
-  in
-  let state_to_term assigns = assigns |> List.map ~f:lit_of |> conj in
+  let state_to_term assigns = assigns |> List.map ~f:lit_of |> Term.t_and_l in
   {
     prefix = List.map state_prefix ~f:state_to_term;
     loop = List.map state_loop ~f:state_to_term;
   }
 
-let parse_lasso (xml_str : string) : Why3.Term.term lasso =
+let parse_lasso (xml_str : string) : Term.term lasso =
   let root = Xml.parse_string xml_str in
   if not (tag_is "counter-example" root) then
     invalid_arg "Expected <counter-example> root";
