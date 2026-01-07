@@ -15,6 +15,7 @@ depends: [
   "why3" {>= "1.8.0"}
   "core" {>= "0.17.0"}
   "core_unix" {>= "0.17.0"}
+  "xml-light"
   "odoc" {with-doc}
 ]
 build: [
