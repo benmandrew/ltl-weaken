@@ -11,6 +11,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - name: Cache opam switch
+        uses: actions/cache@v4
+        with:
+          path: ~/.opam
+          key: ${{ runner.os }}-opam-ocaml-5.4-${{ hashFiles('*.opam', '**/*.opam', 'dune-project') }}
+          restore-keys: |
+            ${{ runner.os }}-opam-ocaml-5.4-
       - name: Set-up OCaml
         uses: ocaml/setup-ocaml@v3
         with:
@@ -21,6 +28,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - name: Cache opam switch
+        uses: actions/cache@v4
+        with:
+          path: ~/.opam
+          key: ${{ runner.os }}-opam-ocaml-5.4-${{ hashFiles('*.opam', '**/*.opam', 'dune-project') }}
+          restore-keys: |
+            ${{ runner.os }}-opam-ocaml-5.4-
       - name: Set up OCaml
         uses: ocaml/setup-ocaml@v3
         with:
