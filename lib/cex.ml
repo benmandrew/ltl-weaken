@@ -79,3 +79,53 @@ let parse_lasso (xml_str : string) : Term.term lasso =
   let states = parse_states_from_xml nodes in
   let loop_point = extract_loop_point root in
   lasso_of_states states loop_point
+
+let collect_variable_names (states : (string * bool) list list) : string list =
+  states
+  |> List.concat_map ~f:(List.map ~f:fst)
+  |> List.dedup_and_sort ~compare:String.compare
+
+let print_lasso (states : (string * bool) list list) (loop_start : int) : unit =
+  let num_states = List.length states in
+  let prefix_len = loop_start - 1 in
+  let vars = collect_variable_names states in
+  (* Build a map from (state_index, var_name) to bool value *)
+  let state_map = Array.of_list states in
+  let get_value state_idx var_name =
+    if state_idx < Array.length state_map then
+      List.Assoc.find state_map.(state_idx) ~equal:String.equal var_name
+    else None
+  in
+  (* Print column headers *)
+  printf "%40s" "";
+  for i = 0 to num_states - 1 do
+    if i < 10 then printf "│ " else printf "│%d" (i / 10)
+  done;
+  printf "\n%40s" "";
+  for i = 0 to num_states - 1 do
+    printf "│%d" (i mod 10)
+  done;
+  printf "\n";
+  (* Print each variable *)
+  List.iter vars ~f:(fun var_name ->
+      printf "%-40s" var_name;
+      for i = 0 to num_states - 1 do
+        let char =
+          match get_value i var_name with
+          | Some true -> "●"
+          | Some false -> " "
+          | None -> "?"
+        in
+        printf "│%s" char
+      done;
+      printf "\n");
+  (* Print lasso indicator *)
+  printf "%-41s" "=Lasso=";
+  for i = 0 to num_states - 1 do
+    if i = prefix_len && i = num_states - 1 then printf "⊔"
+    else if i = prefix_len then printf "└─"
+    else if i = num_states - 1 then printf "┘ "
+    else if i > prefix_len then printf "──"
+    else printf "  "
+  done;
+  printf "\n"
