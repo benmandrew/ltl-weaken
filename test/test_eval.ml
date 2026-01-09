@@ -154,3 +154,25 @@ let%expect_test "eval_safety with conjunction" =
   let result = Eval.eval_safety lasso 0 conj in
   printf "eval_safety(p && q) = %b\n" result;
   [%expect {| eval_safety(p && q) = false |}]
+
+let%expect_test "eval_liveness: some state satisfies property" =
+  let states = [ [ ("p", false) ]; [ ("p", false) ]; [ ("p", true) ] ] in
+  let lasso = Lasso.of_states states 1 in
+  let p = create_prop "p" in
+  let result = Eval.eval_liveness lasso 0 p in
+  printf "eval_liveness(p) from index 0 = %b\n" result;
+  [%expect {| eval_liveness(p) from index 0 = true |}]
+
+let%expect_test "eval_liveness: no loop state satisfies property" =
+  let states = [ [ ("p", true) ]; [ ("p", false) ]; [ ("p", false) ] ] in
+  let lasso = Lasso.of_states states 1 in
+  let p = create_prop "p" in
+  let result = Eval.eval_liveness lasso 0 p in
+  printf "eval_liveness(p) from index 0 = %b\n" result;
+  [%expect {| eval_liveness(p) from index 0 = false |}];
+  let result = Eval.eval_liveness lasso 1 p in
+  printf "eval_liveness(p) from index 1 = %b\n" result;
+  [%expect {| eval_liveness(p) from index 1 = false |}];
+  let result = Eval.eval_liveness lasso 2 p in
+  printf "eval_liveness(p) from index 2 = %b\n" result;
+  [%expect {| eval_liveness(p) from index 2 = false |}]

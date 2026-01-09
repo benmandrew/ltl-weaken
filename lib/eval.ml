@@ -40,3 +40,19 @@ let eval_safety lasso i f =
       let res = List.for_all states ~f:(fun state -> eval_on_state state f) in
       Hashtbl.set initial_state ~key:(Lasso.Safety f) ~data:res;
       res
+
+let eval_liveness lasso i f =
+  let initial_state = Lasso.get_state lasso i in
+  match Hashtbl.find initial_state (Lasso.Liveness f) with
+  | Some v -> v
+  | None ->
+      let prefix_len = Lasso.get_prefix_len lasso in
+      let loop_states =
+        let states = Lasso.get_future_states lasso i in
+        if i < prefix_len then List.drop states (prefix_len - i) else states
+      in
+      let res =
+        List.exists loop_states ~f:(fun state -> eval_on_state state f)
+      in
+      Hashtbl.set initial_state ~key:(Lasso.Liveness f) ~data:res;
+      res

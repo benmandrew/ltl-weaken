@@ -8,3 +8,7 @@ val eval : Lasso.t -> int -> Term.term -> bool
 val eval_safety : Lasso.t -> int -> Term.term -> bool
 (** [eval_safety lasso i term] evaluates a safety property [G term] at index [i]
     in the lasso [lasso]. *)
+
+val eval_liveness : Lasso.t -> int -> Term.term -> bool
+(** [eval_liveness lasso i term] evaluates a liveness property [F term] at index
+    [i] in the lasso [lasso]. *)

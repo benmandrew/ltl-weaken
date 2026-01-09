@@ -31,6 +31,8 @@ end
 type state = (property, bool) Hashtbl.t
 type t = { prefix : state list; loop : state list }
 
+let get_prefix_len t = List.length t.prefix
+let get_loop_len t = List.length t.loop
 let lsymbol_cache = Hashtbl.create (module String)
 
 let prop_of name =
