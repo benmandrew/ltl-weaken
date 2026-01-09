@@ -85,30 +85,40 @@ let collect_variable_names (states : (string * bool) list list) : string list =
   |> List.concat_map ~f:(List.map ~f:fst)
   |> List.dedup_and_sort ~compare:String.compare
 
-let print_lasso (states : (string * bool) list list) (loop_start : int) : unit =
-  let num_states = List.length states in
-  let prefix_len = loop_start - 1 in
-  let vars = collect_variable_names states in
-  (* Build a map from (state_index, var_name) to bool value *)
-  let state_map = Array.of_list states in
-  let get_value state_idx var_name =
-    if state_idx < Array.length state_map then
-      List.Assoc.find state_map.(state_idx) ~equal:String.equal var_name
-    else None
-  in
-  (* Print column headers *)
-  printf "%40s" "";
+let rec lits_of_term term : (string * bool) list option =
+  match term.Term.t_node with
+  | Tapp (fs, []) -> Some [ (fs.ls_name.Ident.id_string, true) ]
+  | Tnot t -> (
+      match t.Term.t_node with
+      | Tapp (fs, []) -> Some [ (fs.ls_name.Ident.id_string, false) ]
+      | _ -> None)
+  | Tbinop (Tand, a, b) ->
+      Option.bind (lits_of_term a) ~f:(fun la ->
+          Option.map (lits_of_term b) ~f:(fun lb -> la @ lb))
+  | Ttrue -> Some []
+  | _ -> None
+
+let assignments_of_lasso (lasso : Term.term lasso) : (string * bool) list list =
+  lasso.prefix @ lasso.loop
+  |> List.map ~f:(fun t -> Option.value (lits_of_term t) ~default:[])
+
+let header width num_states =
+  if num_states >= 10 then begin
+    printf "%*s" width "";
+    for i = 0 to num_states - 1 do
+      if i < 10 then printf "  " else printf " %d" (i / 10)
+    done;
+    printf "\n"
+  end;
+  printf "%*s" width "";
   for i = 0 to num_states - 1 do
-    if i < 10 then printf "│ " else printf "│%d" (i / 10)
+    printf " %d" (i mod 10)
   done;
-  printf "\n%40s" "";
-  for i = 0 to num_states - 1 do
-    printf "│%d" (i mod 10)
-  done;
-  printf "\n";
-  (* Print each variable *)
+  printf "\n"
+
+let print_rows width vars num_states get_value =
   List.iter vars ~f:(fun var_name ->
-      printf "%-40s" var_name;
+      printf "%*s" (-width) var_name;
       for i = 0 to num_states - 1 do
         let char =
           match get_value i var_name with
@@ -118,9 +128,10 @@ let print_lasso (states : (string * bool) list list) (loop_start : int) : unit =
         in
         printf "│%s" char
       done;
-      printf "\n");
-  (* Print lasso indicator *)
-  printf "%-41s" "=Lasso=";
+      printf "│\n")
+
+let print_indicator width prefix_len num_states =
+  printf "%*s" (-(width + 1)) "=Lasso=";
   for i = 0 to num_states - 1 do
     if i = prefix_len && i = num_states - 1 then printf "⊔"
     else if i = prefix_len then printf "└─"
@@ -129,3 +140,27 @@ let print_lasso (states : (string * bool) list list) (loop_start : int) : unit =
     else printf "  "
   done;
   printf "\n"
+
+let lasso_str_len = String.length "=Lasso="
+
+let print_lasso (lasso : Term.term lasso) : unit =
+  let state_assigns = assignments_of_lasso lasso in
+  let num_states = List.length state_assigns in
+  let prefix_len = List.length lasso.prefix in
+  let vars = collect_variable_names state_assigns in
+  let width =
+    let var_widths = List.map vars ~f:String.length in
+    let all_widths = lasso_str_len :: var_widths in
+    List.max_elt all_widths ~compare:Int.compare
+    |> Option.value ~default:lasso_str_len
+    |> Int.succ
+  in
+  let state_map = Array.of_list state_assigns in
+  let get_value state_idx var_name =
+    if state_idx < Array.length state_map then
+      List.Assoc.find state_map.(state_idx) ~equal:String.equal var_name
+    else None
+  in
+  header width num_states;
+  print_rows width vars num_states get_value;
+  print_indicator width prefix_len num_states

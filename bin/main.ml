@@ -10,23 +10,14 @@ let smv_file =
   let doc = "Path to SMV model file" in
   Cmdliner.Arg.(required & opt (some non_dir_file) None & info [ "smv" ] ~doc)
 
-let output_cex lasso =
-  printf "Counterexample Lasso:\n";
-  printf "Prefix:\n";
-  List.iter lasso.Cex.prefix ~f:(fun t -> printf "  %s\n" (Gr1.term_to_smv t));
-  printf "Loop:\n";
-  List.iter lasso.Cex.loop ~f:(fun t -> printf "  %s\n" (Gr1.term_to_smv t))
-
 let check_tlsf tlsf_path smv_path =
-  printf "TLSF file: %s\n" tlsf_path;
-  printf "SMV file: %s\n" smv_path;
   let content = In_channel.read_all tlsf_path in
   let spec = Parser.Tlsf.parse_gr1 content in
   match Nuxmv.check smv_path spec with
   | Nuxmv.Valid -> printf "Specification is VALID\n"
   | Nuxmv.Invalid xml ->
       printf "Specification is INVALID\n";
-      output_cex @@ Cex.parse_lasso xml
+      Cex.print_lasso @@ Cex.parse_lasso xml
   | Nuxmv.Error msg -> printf "Error during verification:\n%s\n" msg
 
 let check_cmd =

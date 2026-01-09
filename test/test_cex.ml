@@ -1,5 +1,26 @@
 open Core
 open Gr1_weaken
+open Why3
+
+let lasso_of_states (states : (string * bool) list list) (prefix_len : int) :
+    Term.term Cex.lasso =
+  let cache = Hashtbl.create (module String) in
+  let prop_of name =
+    match Hashtbl.find cache name with
+    | Some ps -> ps
+    | None ->
+        let ps = Term.create_psymbol (Ident.id_fresh name) [] in
+        Hashtbl.set cache ~key:name ~data:ps;
+        ps
+  in
+  let lit_of (name, value) =
+    let atom = Term.ps_app (prop_of name) [] in
+    if value then atom else Term.t_not atom
+  in
+  let state_to_term assigns = assigns |> List.map ~f:lit_of |> Term.t_and_l in
+  let prefix = List.take states prefix_len |> List.map ~f:state_to_term in
+  let loop = List.drop states prefix_len |> List.map ~f:state_to_term in
+  { prefix; loop }
 
 let%expect_test "parse simple lasso from XML" =
   let xml =
@@ -35,27 +56,25 @@ let%expect_test "print lasso in tabular format" =
       [ ("p", true); ("q", true) ];
     ]
   in
-  Cex.print_lasso states 2;
+  Cex.print_lasso (lasso_of_states states 1);
   [%expect
     {|
-                                            │ │ │
-                                            │0│1│2
-    p                                       │●│ │●
-    q                                       │ │●│●
-    =Lasso=                                    └─┘
+             0 1 2
+    p       │●│ │●│
+    q       │ │●│●│
+    =Lasso=    └─┘
     |}]
 
 let%expect_test "print lasso with longer prefix" =
   let states =
     [ [ ("a", true) ]; [ ("a", true) ]; [ ("a", false) ]; [ ("a", true) ] ]
   in
-  Cex.print_lasso states 3;
+  Cex.print_lasso (lasso_of_states states 0);
   [%expect
     {|
-                                            │ │ │ │
-                                            │0│1│2│3
-    a                                       │●│●│ │●
-    =Lasso=                                      └─┘
+             0 1 2 3
+    a       │●│●│ │●│
+    =Lasso=  └─────┘
     |}]
 
 let%expect_test "print lasso with multiple variables" =
@@ -66,12 +85,11 @@ let%expect_test "print lasso with multiple variables" =
       [ ("busy", false); ("grant", true) ];
     ]
   in
-  Cex.print_lasso states 2;
+  Cex.print_lasso (lasso_of_states states 2);
   [%expect
     {|
-                                            │ │ │
-                                            │0│1│2
-    busy                                    │ │●│
-    grant                                   │ │ │●
-    =Lasso=                                    └─┘
+             0 1 2
+    busy    │ │●│ │
+    grant   │ │ │●│
+    =Lasso=      ⊔
     |}]
