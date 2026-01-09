@@ -17,7 +17,7 @@ let check_tlsf tlsf_path smv_path =
   | Nuxmv.Valid -> printf "Specification is VALID\n"
   | Nuxmv.Invalid xml ->
       printf "Specification is INVALID\n";
-      Cex.print_lasso @@ Cex.parse_lasso xml
+      Lasso.print @@ Cex.parse xml
   | Nuxmv.Error msg -> printf "Error during verification:\n%s\n" msg
 
 let check_cmd =
