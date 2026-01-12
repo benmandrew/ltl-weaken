@@ -1,5 +1,17 @@
 open Core
 open Gr1_weaken
+open Why3
+
+let create_prop name =
+  let ps =
+    match Hashtbl.find Lasso.lsymbol_cache name with
+    | Some ps -> ps
+    | None ->
+        let ps = Term.create_psymbol (Ident.id_fresh name) [] in
+        Hashtbl.set Lasso.lsymbol_cache ~key:name ~data:ps;
+        ps
+  in
+  Term.ps_app ps []
 
 let%expect_test "print lasso in tabular format" =
   let states =
@@ -45,6 +57,38 @@ let%expect_test "print lasso with multiple variables" =
     busy    │ │●│ │
     grant   │ │ │●│
     =Lasso=      ⊔
+    |}]
+
+let%expect_test "print lasso after eval" =
+  let states =
+    [
+      [ ("busy", false); ("grant", false) ];
+      [ ("busy", true); ("grant", false) ];
+      [ ("busy", false); ("grant", true) ];
+    ]
+  in
+  let lasso = Lasso.of_states states 2 in
+  let p = create_prop "busy" in
+  let x = create_prop "X" in
+  let term = Term.t_and x p in
+  for i = 0 to Lasso.length lasso - 1 do
+    Eval.eval_state lasso i term |> ignore
+  done;
+  let p = create_prop "grant" in
+  let term = Term.t_and x p in
+  for i = 0 to Lasso.length lasso - 1 do
+    Eval.eval_safety lasso i term |> ignore
+  done;
+  Lasso.print lasso;
+  [%expect
+    {|
+                 0 1 2
+    (X busy)    │●│ │ │
+    (X grant)   │ │●│●│
+    G (X grant) │ │●│●│
+    busy        │ │●│ │
+    grant       │ │ │●│
+    =Lasso=          ⊔
     |}]
 
 let%expect_test "get states" =

@@ -18,17 +18,6 @@ val gnt_init : t -> Term.term
 val gnt_safety : t -> Term.term list
 val gnt_liveness : t -> Term.term list
 
-val term_to_smv : ?indent:int -> Term.term -> string
-(** [term_to_smv term] converts a Why3 term to SMV LTL syntax.
-
-    Supports:
-    - Boolean operators: &, |, !, ->, <->
-    - Arithmetic operators: +, -, *, /, mod
-    - Comparison operators: =, !=, <, <=, >, >=
-    - LTL operators: G (always), F (eventually), X (next), U (until), R
-      (release)
-    - Variables and constants *)
-
 val to_smv : t -> string
 (** [to_smv t] converts a GR(1) specification to a readable SMV format with
     separate sections for assumptions and guarantees. *)

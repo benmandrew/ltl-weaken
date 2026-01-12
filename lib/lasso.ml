@@ -6,6 +6,11 @@ type property =
   | Safety of Term.term
   | Liveness of Term.term
 
+let property_to_string = function
+  | Prop term -> Print.term_to_smv term
+  | Safety term -> "G " ^ Print.term_to_smv term
+  | Liveness term -> "G F " ^ Print.term_to_smv term
+
 module Ts = struct
   include Term
 
@@ -80,12 +85,7 @@ let get_assignments t =
   |> List.map ~f:(fun t ->
       Hashtbl.to_alist t
       |> List.map ~f:(fun (k, v) ->
-          let var_name =
-            match k with
-            | Prop term -> Format.asprintf "%a" Pretty.print_term term
-            | Safety term -> Format.asprintf "G %a" Pretty.print_term term
-            | Liveness term -> Format.asprintf "G F %a" Pretty.print_term term
-          in
+          let var_name = property_to_string k in
           (var_name, v)))
 
 let collect_variable_names states =
@@ -160,10 +160,5 @@ let print_state state =
   Hashtbl.to_alist state
   |> List.sort ~compare:(fun (k1, _) (k2, _) -> Ts.compare k1 k2)
   |> List.iter ~f:(fun (k, v) ->
-      let var_name =
-        match k with
-        | Prop term -> Format.asprintf "%a" Pretty.print_term term
-        | Safety term -> Format.asprintf "G %a" Pretty.print_term term
-        | Liveness term -> Format.asprintf "G F %a" Pretty.print_term term
-      in
+      let var_name = property_to_string k in
       printf "%s: %b\n" var_name v)
