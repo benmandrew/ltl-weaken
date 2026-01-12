@@ -60,7 +60,7 @@ GUARANTEE {
   [%expect
     {|
     asm_init: TRUE
-    asm_safety: (!(request) | !(busy))
+    asm_safety: (!request | !busy)
     asm_liveness: request
     gnt_init: TRUE
     gnt_safety: ack
@@ -114,8 +114,8 @@ GUARANTEE {
     {|
     asm_init: (a & b)
     asm_safety count: 2
-      - (!(a) | b)
-      - (!(a) | b)
+      - (!a | b)
+      - (!a | b)
     gnt_liveness count: 2
       - (a | b)
       - b

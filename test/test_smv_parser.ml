@@ -9,7 +9,7 @@ let%expect_test "SMV parse simple proposition" =
 let%expect_test "SMV parse negation" =
   let term = Parser.Smv.parse_formula "!p" in
   print_endline (Gr1.term_to_smv term);
-  [%expect {| !(p) |}]
+  [%expect {| !p |}]
 
 let%expect_test "SMV parse conjunction" =
   let term = Parser.Smv.parse_formula "p & q" in
@@ -34,17 +34,17 @@ let%expect_test "SMV parse disjunction with ||" =
 let%expect_test "SMV parse implication" =
   let term = Parser.Smv.parse_formula "p -> q" in
   print_endline (Gr1.term_to_smv term);
-  [%expect {| (!(p) | q) |}]
+  [%expect {| (!p | q) |}]
 
 let%expect_test "SMV parse biconditional" =
   let term = Parser.Smv.parse_formula "p <-> q" in
   print_endline (Gr1.term_to_smv term);
-  [%expect {| ((p) <-> (q)) |}]
+  [%expect {| (p <-> q) |}]
 
 let%expect_test "SMV parse complex formula" =
   let term = Parser.Smv.parse_formula "(p & q) | (!r)" in
   print_endline (Gr1.term_to_smv term);
-  [%expect {| ((p & q) | !(r)) |}]
+  [%expect {| ((p & q) | !r) |}]
 
 let%expect_test "SMV parse nested parentheses" =
   let term = Parser.Smv.parse_formula "((p & q) | r) & s" in
@@ -58,8 +58,13 @@ let%expect_test "SMV parse multiple formulae" =
   [%expect {|
     2 formulae:
       (p & q)
-      (!(r) | s)
+      (!r | s)
     |}]
+
+let%expect_test "SMV parse next operator" =
+  let term = Parser.Smv.parse_formula "X (p & q)" in
+  print_endline (Gr1.term_to_smv term);
+  [%expect {| (X (p & q)) |}]
 
 let%expect_test "SMV parse identifier" =
   let id = Parser.Smv.parse_ident "my_variable" in

@@ -16,14 +16,14 @@ let create_prop name =
 let%expect_test "eval true on any state" =
   let states = [ [ ("p", true) ] ] in
   let lasso = Lasso.of_states states 0 in
-  let result = Eval.eval lasso 0 Term.t_true in
+  let result = Eval.eval_state lasso 0 Term.t_true in
   printf "eval(T) = %b\n" result;
   [%expect {| eval(T) = true |}]
 
 let%expect_test "eval false on any state" =
   let states = [ [ ("p", true) ] ] in
   let lasso = Lasso.of_states states 0 in
-  let result = Eval.eval lasso 0 Term.t_false in
+  let result = Eval.eval_state lasso 0 Term.t_false in
   printf "eval(F) = %b\n" result;
   [%expect {| eval(F) = false |}]
 
@@ -33,7 +33,7 @@ let%expect_test "eval conjunction (true && true)" =
   let p = create_prop "p" in
   let q = create_prop "q" in
   let conj = Term.t_and p q in
-  let result = Eval.eval lasso 0 conj in
+  let result = Eval.eval_state lasso 0 conj in
   printf "eval(p && q) = %b\n" result;
   [%expect {| eval(p && q) = true |}]
 
@@ -43,7 +43,7 @@ let%expect_test "eval conjunction (true && false)" =
   let p = create_prop "p" in
   let q = create_prop "q" in
   let conj = Term.t_and p q in
-  let result = Eval.eval lasso 0 conj in
+  let result = Eval.eval_state lasso 0 conj in
   printf "eval(p && q) = %b\n" result;
   [%expect {| eval(p && q) = false |}]
 
@@ -53,7 +53,7 @@ let%expect_test "eval disjunction (true || false)" =
   let p = create_prop "p" in
   let q = create_prop "q" in
   let disj = Term.t_or p q in
-  let result = Eval.eval lasso 0 disj in
+  let result = Eval.eval_state lasso 0 disj in
   printf "eval(p || q) = %b\n" result;
   [%expect {| eval(p || q) = true |}]
 
@@ -62,7 +62,7 @@ let%expect_test "eval negation (not true)" =
   let lasso = Lasso.of_states states 0 in
   let p = create_prop "p" in
   let neg = Term.t_not p in
-  let result = Eval.eval lasso 0 neg in
+  let result = Eval.eval_state lasso 0 neg in
   printf "eval(not p) = %b\n" result;
   [%expect {| eval(not p) = false |}]
 
@@ -71,7 +71,7 @@ let%expect_test "eval negation (not false)" =
   let lasso = Lasso.of_states states 0 in
   let p = create_prop "p" in
   let neg = Term.t_not p in
-  let result = Eval.eval lasso 0 neg in
+  let result = Eval.eval_state lasso 0 neg in
   printf "eval(not p) = %b\n" result;
   [%expect {| eval(not p) = true |}]
 
@@ -81,7 +81,7 @@ let%expect_test "eval implication (true -> true)" =
   let p = create_prop "p" in
   let q = create_prop "q" in
   let impl = Term.t_implies p q in
-  let result = Eval.eval lasso 0 impl in
+  let result = Eval.eval_state lasso 0 impl in
   printf "eval(p -> q) = %b\n" result;
   [%expect {| eval(p -> q) = true |}]
 
@@ -91,7 +91,7 @@ let%expect_test "eval implication (true -> false)" =
   let p = create_prop "p" in
   let q = create_prop "q" in
   let impl = Term.t_implies p q in
-  let result = Eval.eval lasso 0 impl in
+  let result = Eval.eval_state lasso 0 impl in
   printf "eval(p -> q) = %b\n" result;
   [%expect {| eval(p -> q) = false |}]
 
@@ -101,7 +101,7 @@ let%expect_test "eval iff (true <-> true)" =
   let p = create_prop "p" in
   let q = create_prop "q" in
   let iff = Term.t_iff p q in
-  let result = Eval.eval lasso 0 iff in
+  let result = Eval.eval_state lasso 0 iff in
   printf "eval(p <-> q) = %b\n" result;
   [%expect {| eval(p <-> q) = true |}]
 
@@ -111,9 +111,30 @@ let%expect_test "eval iff (true <-> false)" =
   let p = create_prop "p" in
   let q = create_prop "q" in
   let iff = Term.t_iff p q in
-  let result = Eval.eval lasso 0 iff in
+  let result = Eval.eval_state lasso 0 iff in
   printf "eval(p <-> q) = %b\n" result;
   [%expect {| eval(p <-> q) = false |}]
+
+let%expect_test "eval X" =
+  let states = [ [ ("p", true) ]; [ ("p", false) ] ] in
+  let lasso = Lasso.of_states states 0 in
+  let p = create_prop "p" in
+  let x = create_prop "X" in
+  let term = Term.t_and x p in
+  let result = Eval.eval_state lasso 0 term in
+  printf "eval(X (p)) = %b\n" result;
+  [%expect {| eval(X (p)) = false |}];
+  let result = Eval.eval_state lasso 1 term in
+  printf "eval(X (p)) = %b\n" result;
+  [%expect {| eval(X (p)) = true |}];
+  let term = Term.t_and x @@ Term.t_not p in
+  let result = Eval.eval_state lasso 0 term in
+  printf "eval(X (!p)) = %b\n" result;
+  [%expect {| eval(X (!p)) = true |}];
+  let term = Term.t_not @@ Term.t_and x p in
+  let result = Eval.eval_state lasso 0 term in
+  printf "eval(!(X (p))) = %b\n" result;
+  [%expect {| eval(!(X (p))) = true |}]
 
 let%expect_test "eval_safety: all states satisfy property" =
   let states = [ [ ("p", true) ]; [ ("p", true) ]; [ ("p", true) ] ] in

@@ -47,6 +47,23 @@ let%expect_test "print lasso with multiple variables" =
     =Lasso=      ⊔
     |}]
 
+let%expect_test "get states" =
+  let states = [ [ ("p", true) ]; [ ("p", false) ] ] in
+  let lasso = Lasso.of_states states 1 in
+  Lasso.print_state @@ Lasso.get_state lasso 0;
+  Lasso.print_state @@ Lasso.get_state lasso 1;
+  Lasso.print_state @@ Lasso.get_state lasso 2;
+  Lasso.print_state @@ Lasso.get_state lasso 3;
+  Lasso.print_state @@ Lasso.get_state lasso 4;
+  [%expect
+    {|
+    p: true
+    p: false
+    p: false
+    p: false
+    p: false
+    |}]
+
 let%expect_test "get future states" =
   let states =
     [ [ ("p", true) ]; [ ("p", false) ]; [ ("p", true) ]; [ ("p", true) ] ]

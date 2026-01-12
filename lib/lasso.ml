@@ -47,6 +47,7 @@ let prop_of name =
 let lit_of (name, value) = (Prop (Term.ps_app (prop_of name) []), value)
 
 let of_states states loop_idx =
+  assert (loop_idx >= 0 && loop_idx < List.length states);
   (* Split states into prefix and loop *)
   let state_prefix = List.take states loop_idx in
   let state_loop = List.drop states loop_idx in
@@ -62,14 +63,14 @@ let of_states states loop_idx =
 
 let get_state t i =
   if i < List.length t.prefix then List.nth_exn t.prefix i
-  else List.nth_exn t.loop ((i - List.length t.prefix) mod List.length t.loop)
+  else List.nth_exn t.loop ((i - List.length t.prefix) % List.length t.loop)
 
 let get_future_states t i =
   if i < List.length t.prefix then
     let future_prefix = List.drop t.prefix i in
     future_prefix @ t.loop
   else
-    let loop_start_idx = (i - List.length t.prefix) mod List.length t.loop in
+    let loop_start_idx = (i - List.length t.prefix) % List.length t.loop in
     let future_loop = List.drop t.loop loop_start_idx in
     let wrap_around = List.take t.loop loop_start_idx in
     future_loop @ wrap_around
@@ -154,3 +155,15 @@ let print t =
   header width num_states;
   print_rows width vars num_states get_value;
   print_indicator width prefix_len num_states
+
+let print_state state =
+  Hashtbl.to_alist state
+  |> List.sort ~compare:(fun (k1, _) (k2, _) -> Ts.compare k1 k2)
+  |> List.iter ~f:(fun (k, v) ->
+      let var_name =
+        match k with
+        | Prop term -> Format.asprintf "%a" Pretty.print_term term
+        | Safety term -> Format.asprintf "G %a" Pretty.print_term term
+        | Liveness term -> Format.asprintf "G F %a" Pretty.print_term term
+      in
+      printf "%s: %b\n" var_name v)

@@ -12,6 +12,20 @@
         Hashtbl.set Lasso.lsymbol_cache ~key:name ~data:ps;
         Term.ps_app ps []
 
+  (* A zero-arity predicate to mark the X (next) operator in the AST. *)
+  let x_marker_ps : Term.lsymbol option ref = ref None
+
+  let x_marker () =
+    let ps =
+      match !x_marker_ps with
+      | Some ps -> ps
+      | None ->
+          let ps = Term.create_psymbol (Ident.id_fresh "X") [] in
+          x_marker_ps := Some ps;
+          ps
+    in
+    Term.ps_app ps []
+
   (* Helper to apply unary operations *)
   let unary_op op arg =
     match op with
@@ -20,7 +34,7 @@
         (* For temporal operators, just return the argument for now *)
         arg
     | "F" -> arg
-    | "X" -> arg
+    | "X" -> Term.t_and (x_marker ()) arg
     | _ -> arg
 
   (* Helper to apply binary operators *)

@@ -1,15 +1,24 @@
 open Core
 open Why3
 
-let rec eval_on_state_aux state f =
+(** X (p) is implemented as X & p, so it must be disambiguated from real
+    conjunction *)
+let rec eval_and lasso i p q =
+  match p.Term.t_node with
+  | Tapp (fs, args)
+    when String.equal fs.ls_name.Ident.id_string "X" && List.is_empty args ->
+      eval_state lasso (i + 1) q
+  | _ -> eval_state lasso i p && eval_state lasso i q
+
+and eval_state_aux lasso i f =
   match f.Term.t_node with
-  | Tbinop (Tand, p, q) -> eval_on_state state p && eval_on_state state q
-  | Tbinop (Tor, p, q) -> eval_on_state state p || eval_on_state state q
+  | Tbinop (Tand, p, q) -> eval_and lasso i p q
+  | Tbinop (Tor, p, q) -> eval_state lasso i p || eval_state lasso i q
   | Tbinop (Timplies, p, q) ->
-      (not @@ eval_on_state state p) || eval_on_state state q
+      (not @@ eval_state lasso i p) || eval_state lasso i q
   | Tbinop (Tiff, p, q) ->
-      Bool.equal (eval_on_state state p) (eval_on_state state q)
-  | Tnot p -> not @@ eval_on_state state p
+      Bool.equal (eval_state lasso i p) (eval_state lasso i q)
+  | Tnot p -> not @@ eval_state lasso i p
   | Ttrue -> true
   | Tfalse -> false
   | Tapp (p, []) ->
@@ -19,17 +28,14 @@ let rec eval_on_state_aux state f =
       Format.printf "'%a' not supported\n" Pretty.print_term f;
       raise (Not_found_s (Core.Sexp.Atom "Unsupported term in eval"))
 
-and eval_on_state state f =
+and eval_state lasso i f =
+  let state = Lasso.get_state lasso i in
   match Hashtbl.find state (Lasso.Prop f) with
   | Some v -> v
   | None ->
-      let res = eval_on_state_aux state f in
+      let res = eval_state_aux lasso i f in
       Hashtbl.set state ~key:(Lasso.Prop f) ~data:res;
       res
-
-let eval lasso i f =
-  let state = Lasso.get_state lasso i in
-  eval_on_state state f
 
 let eval_safety lasso i f =
   let initial_state = Lasso.get_state lasso i in
@@ -37,7 +43,8 @@ let eval_safety lasso i f =
   | Some v -> v
   | None ->
       let states = Lasso.get_future_states lasso i in
-      let res = List.for_all states ~f:(fun state -> eval_on_state state f) in
+      let indices = List.init (List.length states) ~f:(fun idx -> i + idx) in
+      let res = List.for_all indices ~f:(fun i -> eval_state lasso i f) in
       Hashtbl.set initial_state ~key:(Lasso.Safety f) ~data:res;
       res
 
@@ -47,13 +54,12 @@ let eval_liveness lasso i f =
   | Some v -> v
   | None ->
       let prefix_length = Lasso.prefix_length lasso in
-      let loop_states =
+      let indices =
         let states = Lasso.get_future_states lasso i in
-        if i < prefix_length then List.drop states (prefix_length - i)
-        else states
+        let indices = List.init (List.length states) ~f:(fun idx -> i + idx) in
+        if i < prefix_length then List.drop indices (prefix_length - i)
+        else indices
       in
-      let res =
-        List.exists loop_states ~f:(fun state -> eval_on_state state f)
-      in
+      let res = List.exists indices ~f:(fun i -> eval_state lasso i f) in
       Hashtbl.set initial_state ~key:(Lasso.Liveness f) ~data:res;
       res

@@ -41,12 +41,11 @@ let rec term_to_smv ?(indent = 0) (term : Term.term) : string =
           sprintf "(%s & %s)" (term_to_smv ~indent a) (term_to_smv ~indent b)
       | "or", [ a; b ] ->
           sprintf "(%s | %s)" (term_to_smv ~indent a) (term_to_smv ~indent b)
-      | "not", [ a ] -> sprintf "!(%s)" (term_to_smv ~indent a)
+      | "not", [ a ] -> sprintf "!%s" (term_to_smv ~indent a)
       | "->", [ a; b ] | "implies", [ a; b ] ->
-          sprintf "(!(%s) | %s)" (term_to_smv ~indent a) (term_to_smv ~indent b)
+          sprintf "(!%s | %s)" (term_to_smv ~indent a) (term_to_smv ~indent b)
       | "<->", [ a; b ] | "iff", [ a; b ] ->
-          sprintf "((%s) <-> (%s))" (term_to_smv ~indent a)
-            (term_to_smv ~indent b)
+          sprintf "(%s <-> %s)" (term_to_smv ~indent a) (term_to_smv ~indent b)
       (* Arithmetic operators *)
       | "+", [ a; b ] ->
           sprintf "(%s + %s)" (term_to_smv ~indent a) (term_to_smv ~indent b)
@@ -72,9 +71,9 @@ let rec term_to_smv ?(indent = 0) (term : Term.term) : string =
       | ">=", [ a; b ] ->
           sprintf "(%s >= %s)" (term_to_smv ~indent a) (term_to_smv ~indent b)
       (* Temporal operators (LTL) *)
-      | "G", [ a ] | "[]", [ a ] -> sprintf "G (%s)" (term_to_smv ~indent a)
-      | "F", [ a ] | "<>", [ a ] -> sprintf "F (%s)" (term_to_smv ~indent a)
-      | "X", [ a ] | "next", [ a ] -> sprintf "X (%s)" (term_to_smv ~indent a)
+      | "G", [ a ] | "[]", [ a ] -> sprintf "(G %s)" (term_to_smv ~indent a)
+      | "F", [ a ] | "<>", [ a ] -> sprintf "(F %s)" (term_to_smv ~indent a)
+      | "X", [ a ] | "next", [ a ] -> sprintf "(X %s)" (term_to_smv ~indent a)
       | "U", [ a; b ] ->
           sprintf "(%s U %s)" (term_to_smv ~indent a) (term_to_smv ~indent b)
       | "R", [ a; b ] ->
@@ -113,17 +112,24 @@ let rec term_to_smv ?(indent = 0) (term : Term.term) : string =
       sprintf "/* %s %s */ %s" quant_str vars (term_to_smv ~indent body)
   | Tbinop (op, t1, t2) -> (
       match op with
-      | Tand ->
-          sprintf "(%s & %s)" (term_to_smv ~indent t1) (term_to_smv ~indent t2)
+      | Tand -> (
+          (* Special-case X marker: X & φ -> X (φ) *)
+          match t1.t_node with
+          | Tapp (fs, args)
+            when String.equal fs.ls_name.Ident.id_string "X"
+                 && List.is_empty args ->
+              sprintf "(X %s)" (term_to_smv ~indent t2)
+          | _ ->
+              sprintf "(%s & %s)" (term_to_smv ~indent t1)
+                (term_to_smv ~indent t2))
       | Tor ->
           sprintf "(%s | %s)" (term_to_smv ~indent t1) (term_to_smv ~indent t2)
       | Timplies ->
-          sprintf "(!(%s) | %s)" (term_to_smv ~indent t1)
-            (term_to_smv ~indent t2)
+          sprintf "(!%s | %s)" (term_to_smv ~indent t1) (term_to_smv ~indent t2)
       | Tiff ->
-          sprintf "((%s) <-> (%s))" (term_to_smv ~indent t1)
+          sprintf "(%s <-> %s)" (term_to_smv ~indent t1)
             (term_to_smv ~indent t2))
-  | Tnot t -> sprintf "!(%s)" (term_to_smv ~indent t)
+  | Tnot t -> sprintf "!%s" (term_to_smv ~indent t)
   | Ttrue -> "TRUE"
   | Tfalse -> "FALSE"
   | Teps _ -> "/* epsilon term */"
@@ -173,7 +179,7 @@ let to_smv_ltl t =
     | [] -> None
     | _ ->
         let formulas =
-          List.map terms ~f:(fun t -> sprintf "G F (%s)" (term_to_smv t))
+          List.map terms ~f:(fun t -> sprintf "(G F %s)" (term_to_smv t))
         in
         Some (sprintf "(%s)" (String.concat ~sep:" & " formulas))
   in
@@ -195,13 +201,13 @@ let to_smv_ltl t =
   in
   let asm_formula = String.concat ~sep:" & " assumptions in
   let gnt_formula = String.concat ~sep:" & " guarantees in
-  sprintf "(%s) -> (%s)" asm_formula gnt_formula
+  sprintf "(%s -> %s)" asm_formula gnt_formula
 
 let eval t lasso =
   let length = Lasso.length lasso in
   for i = 0 to length - 1 do
-    Eval.eval lasso i t.asm_init |> ignore;
-    Eval.eval lasso i t.gnt_init |> ignore;
+    Eval.eval_state lasso i t.asm_init |> ignore;
+    Eval.eval_state lasso i t.gnt_init |> ignore;
     List.map t.asm_safety ~f:(Eval.eval_safety lasso i) |> ignore;
     List.map t.gnt_safety ~f:(Eval.eval_safety lasso i) |> ignore;
     List.map t.asm_liveness ~f:(Eval.eval_liveness lasso i) |> ignore;

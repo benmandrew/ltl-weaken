@@ -62,21 +62,21 @@ let%expect_test "propositions with NOT" =
   let p = make_prop "busy" in
   let formula = Term.t_not (prop_term p) in
   print_endline (Gr1.term_to_smv formula);
-  [%expect {| !(busy) |}]
+  [%expect {| !busy |}]
 
 let%expect_test "propositions with IMPLIES" =
   let p = make_prop "request" in
   let q = make_prop "grant" in
   let formula = Term.t_implies (prop_term p) (prop_term q) in
   print_endline (Gr1.term_to_smv formula);
-  [%expect {| (!(request) | grant) |}]
+  [%expect {| (!request | grant) |}]
 
 let%expect_test "propositions with IFF" =
   let p = make_prop "ready" in
   let q = make_prop "done" in
   let formula = Term.t_iff (prop_term p) (prop_term q) in
   print_endline (Gr1.term_to_smv formula);
-  [%expect {| ((ready) <-> (done)) |}]
+  [%expect {| (ready <-> done) |}]
 
 let%expect_test "complex proposition formula" =
   let p = make_prop "p" in
@@ -89,7 +89,7 @@ let%expect_test "complex proposition formula" =
       (Term.t_and (Term.t_not (prop_term p)) (prop_term r))
   in
   print_endline (Gr1.term_to_smv formula);
-  [%expect {| ((p & q) | (!(p) & r)) |}]
+  [%expect {| ((p & q) | (!p & r)) |}]
 
 let%expect_test "GR(1) to SMV conversion" =
   let req = make_prop "request" in
@@ -116,14 +116,15 @@ let%expect_test "GR(1) to SMV conversion" =
     -- GR(1) Specification in SMV LTL
 
     -- Assumptions
-    asm_init: !(busy)
-    asm_safety: (!(request) | !(busy))
+    asm_init: !busy
+    asm_safety: (!request | !busy)
     asm_liveness: request
 
     -- Guarantees
-    gnt_init: !(grant)
-    gnt_safety: (!(grant) | !(busy))
-    gnt_liveness: grant |}]
+    gnt_init: !grant
+    gnt_safety: (!grant | !busy)
+    gnt_liveness: grant
+    |}]
 
 let%expect_test "GR(1) to SMV LTL formula" =
   let req = make_prop "request" in
@@ -138,7 +139,7 @@ let%expect_test "GR(1) to SMV LTL formula" =
   in
   print_endline (Gr1.to_smv_ltl spec);
   [%expect
-    {| (request & G (!(request)) & (G F (request))) -> (!(grant) & G ((!(request) | grant)) & (G F (grant))) |}]
+    {| (request & G (!request) & ((G F request)) -> !grant & G ((!request | grant)) & ((G F grant))) |}]
 
 let%expect_test "empty lists in GR(1) spec" =
   let spec =
@@ -156,7 +157,7 @@ let%expect_test "empty lists in GR(1) spec" =
     -- Guarantees
     gnt_init: TRUE |}];
   print_endline (Gr1.to_smv_ltl spec);
-  [%expect {| (TRUE) -> (TRUE) |}]
+  [%expect {| (TRUE -> TRUE) |}]
 
 let%expect_test "single element lists" =
   let spec =
@@ -189,7 +190,7 @@ let%expect_test "temporal operator structure" =
   in
   print_endline (Gr1.to_smv_ltl spec);
   [%expect
-    {| (p & G ((p & q)) & (G F (p) & G F (q))) -> (p & G (p) & (G F (p) & G F (q))) |}]
+    {| (p & G ((p & q)) & ((G F p) & (G F q)) -> p & G (p) & ((G F p) & (G F q))) |}]
 
 let%expect_test "output format consistency" =
   let spec =
@@ -237,6 +238,7 @@ let%expect_test "mutual exclusion example" =
     asm_liveness: request_1 & request_2
 
     -- Guarantees
-    gnt_init: (!(in_critical_section_1) & !(in_critical_section_2))
-    gnt_safety: !((in_critical_section_1 & in_critical_section_2))
-    gnt_liveness: (!(request_1) | in_critical_section_1) & (!(request_2) | in_critical_section_2) |}]
+    gnt_init: (!in_critical_section_1 & !in_critical_section_2)
+    gnt_safety: !(in_critical_section_1 & in_critical_section_2)
+    gnt_liveness: (!request_1 | in_critical_section_1) & (!request_2 | in_critical_section_2)
+    |}]

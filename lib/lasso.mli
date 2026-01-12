@@ -45,3 +45,6 @@ val get_assignments : t -> (string * bool) list list
 
 val print : t -> unit
 (** [print lasso] prints the lasso trace in a human-readable format. *)
+
+val print_state : state -> unit
+(** [print_state state] prints the variable assignments in the given state. *)
