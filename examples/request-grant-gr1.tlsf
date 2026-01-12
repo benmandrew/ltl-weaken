@@ -27,14 +27,14 @@ MAIN {
     G (grant -> X busy);
     G (busy  -> X !busy);
 
-    // Request creates a pending obligation
-    G (req -> X pending);
+    // Request creates a pending obligation (only if not immediately granted)
+    G (req & !grant -> X pending);
 
     // Grant clears pending obligation
     G (grant -> X !pending);
 
-    // Pending persists until cleared
-    G (pending & !grant -> X pending);
+    // Pending persists until cleared (while request is active)
+    G (pending & !grant & req -> X pending);
   }
 
   ASSUME {

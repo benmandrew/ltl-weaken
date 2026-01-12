@@ -15,6 +15,8 @@ ASSIGN
   init(pending) := FALSE;
 
   -- Controller state machine
+  -- IDLE: can transition to BUSY when grant is true
+  -- BUSY: must transition back to IDLE (to satisfy busy -> X !busy)
   next(state) :=
     case
       state = IDLE & req : BUSY;
@@ -23,10 +25,12 @@ ASSIGN
     esac;
 
   -- Pending obligation logic (GR(1) auxiliary variable encoding)
+  -- Tracks deferred requests that haven't been granted yet
   next(pending) :=
     case
-      grant            : FALSE;  -- grant clears obligation
-      req              : TRUE;   -- request creates obligation
-      pending          : TRUE;   -- obligation persists
+      grant            : FALSE;  -- grant clears the pending obligation
+      !req             : FALSE;  -- no request means no pending obligation
+      req              : TRUE;   -- request creates obligation (only if grant=false)
+      pending          : TRUE;   -- pending obligation persists until grant
       TRUE             : FALSE;
     esac;

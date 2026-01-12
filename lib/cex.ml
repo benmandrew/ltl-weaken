@@ -36,7 +36,14 @@ let extract_loop_point (root : Xml.xml) : int =
         | _ -> false)
   with
   | Some loops_elem -> (
-      try text_of_element loops_elem |> String.strip |> Int.of_string
+      try
+        let loops_str = text_of_element loops_elem |> String.strip in
+        (* Handle "3,4" format (multiple loop points) by taking the first *)
+        let first_loop =
+          String.split loops_str ~on:','
+          |> List.hd_exn |> String.strip |> Int.of_string
+        in
+        first_loop
       with _ -> invalid_arg "Invalid <loops> value")
   | None -> invalid_arg "<loops> tag not found"
 
