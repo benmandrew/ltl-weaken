@@ -1,0 +1,62 @@
+// Example from:
+//
+// D’Ippolito et al. (2014).
+// Hope for the best, prepare for the worst: Multi-tier control for adaptive systems.
+// ICSE, 688–699. https://doi.org/10.1145/2568225.2568264
+
+// Fluent LTL goals:
+//
+// fluent BEEN_PICKING = <success, {reset}>
+// fluent BEEN_PUTTING = <putsuccess, {reset}>
+// fluent ENDED = <ended, reset>
+// ltl_property BOUNDLIVE = [](ENDED -> (BEEN_PICKING && BEEN_PUTTING))
+// const MaxTime = 6
+// COUNT = COUNT[0],
+// COUNT[i:Times] = (CONT -> count[i] -> COUNT[i+1] | ended -> reset -> COUNT),
+// COUNT[MaxTime+1] = ERROR.
+
+MAIN {
+    INPUTS {
+        success : boolean;
+        putsuccess : boolean;
+        ended : boolean;
+        reset : boolean;
+    }
+
+    OUTPUTS {
+        been_picking : boolean;
+        been_putting : boolean;
+        ended_f : boolean;
+        pending_order : boolean;
+    }
+
+    INITIALLY {
+    }
+
+    PRESET {
+        !been_picking;
+        !been_putting;
+        !ended_f;
+        !pending_order;
+    }
+
+    REQUIRE {
+    }
+
+    ASSERT {
+        G (X been_picking        <-> (success | (been_picking & !reset)));
+        G (X been_putting        <-> (putsuccess | (been_putting & !reset)));
+        G (X ended_f             <-> (ended | (ended_f & !reset)));
+        G (ended_f                -> (been_picking & been_putting));
+        G (reset                  -> X pending_order);
+        G (ended                  -> X !pending_order);
+        G (pending_order & !ended -> X pending_order);
+    }
+
+    ASSUME {
+    }
+
+    GUARANTEE {
+        GF (!pending_order)
+    }
+}

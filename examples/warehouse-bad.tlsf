@@ -1,0 +1,49 @@
+// Example from:
+//
+// D’Ippolito et al. (2014).
+// Hope for the best, prepare for the worst: Multi-tier control for adaptive systems.
+// ICSE, 688–699. https://doi.org/10.1145/2568225.2568264
+
+// Fluent LTL goals:
+//
+// fluent BEEN_PICKING = <success, {reset}>
+// fluent BEEN_PUTTING = <putsuccess, {reset}>
+// fluent ENDED = <ended, reset>
+// ltl_property BOUNDLIVE = [](ENDED -> (BEEN_PICKING && BEEN_PUTTING))
+// const MaxTime = 6
+// COUNT = COUNT[0],
+// COUNT[i:Times] = (CONT -> count[i] -> COUNT[i+1] | ended -> reset -> COUNT),
+// COUNT[MaxTime+1] = ERROR.
+
+MAIN {
+    INPUTS {
+        success : boolean;
+        putsuccess : boolean;
+    }
+
+    OUTPUTS {
+        picked : boolean;
+    }
+
+    INITIALLY {
+    }
+
+    PRESET {
+        !picked
+    }
+
+    REQUIRE {
+    }
+
+    ASSERT {
+        G (X picked <-> (success | (picked & !putsuccess)));
+        G !(picked  & pickup);
+        G !(!picked & putdown);
+    }
+
+    ASSUME {
+    }
+
+    GUARANTEE {
+    }
+}
