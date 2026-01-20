@@ -1,0 +1,70 @@
+-- Example from:
+--
+-- D’Ippolito et al. (2014).
+-- Hope for the best, prepare for the worst: Multi-tier control for adaptive systems.
+-- ICSE, 688–699. https://doi.org/10.1145/2568225.2568264
+
+-- FSP process definitions (assumptions):
+--
+-- GOOD_MAP = (arrive[’w] -> MAP[’w]),
+-- MAP[’w] = (move[’e] -> arrive[’m] -> MAP[’m]
+--          | move[’w] -> arrive[’w] -> MAP[’w]
+--          | putdown -> putsuccess -> MAP[’w]
+--          | pickup -> fail -> MAP[’w]),
+-- MAP[’m] = (move[’e] -> arrive[’e] -> MAP[’e]
+--          | move[’w] -> arrive[’w] -> MAP[’w]
+--          | putdown -> putfail -> MAP[’m]
+--          | pickup -> fail -> MAP[’m]),
+-- MAP[’e] = (move[’e] -> arrive[’e] -> MAP[’e]
+--          | move[’w] -> arrive[’m] -> MAP[’m]
+--          | putdown -> putfail -> MAP[’e]
+--          | pickup -> success -> MAP[’e]).
+
+MODULE main
+
+VAR
+  loc        : {w, m, e};
+  arrive_w  : boolean;
+  arrive_m  : boolean;
+  arrive_e  : boolean;
+  success   : boolean;
+  fail      : boolean;
+  putsuccess: boolean;
+  putfail   : boolean;
+
+ASSIGN
+  -- Initial location (arbitrary but fixed)
+  init(loc) := w;
+
+  -- Arrival signals: environment chooses arbitrarily
+  init(arrive_w) := FALSE;
+  init(arrive_m) := FALSE;
+  init(arrive_e) := FALSE;
+
+  next(arrive_w) := {TRUE, FALSE};
+  next(arrive_m) := {TRUE, FALSE};
+  next(arrive_e) := {TRUE, FALSE};
+
+  -- Location update: completely unconstrained
+  next(loc) :=
+    case
+      arrive_w : w;
+      arrive_m : m;
+      arrive_e : e;
+      TRUE     : loc;
+    esac;
+
+  -- Pickup outcome: arbitrary
+  init(success) := FALSE;
+  init(fail)    := FALSE;
+
+  next(success) := {TRUE, FALSE};
+  next(fail)    := {TRUE, FALSE};
+
+  -- Putdown outcome: arbitrary
+  init(putsuccess) := FALSE;
+  init(putfail)    := FALSE;
+
+  next(putsuccess) := {TRUE, FALSE};
+  next(putfail)    := {TRUE, FALSE};
+

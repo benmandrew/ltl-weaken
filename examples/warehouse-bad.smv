@@ -1,0 +1,48 @@
+-- Example from:
+--
+-- D’Ippolito et al. (2014).
+-- Hope for the best, prepare for the worst: Multi-tier control for adaptive systems.
+-- ICSE, 688–699. https://doi.org/10.1145/2568225.2568264
+
+-- FSP process definitions (assumptions):
+--
+-- GOOD_MAP = (arrive[’w] -> MAP[’w]),
+-- MAP[’w] = (move[’e] -> arrive[’m] -> MAP[’m]
+--          | move[’w] -> arrive[’w] -> MAP[’w]
+--          | putdown -> putsuccess -> MAP[’w]
+--          | pickup -> fail -> MAP[’w]),
+-- MAP[’m] = (move[’e] -> arrive[’e] -> MAP[’e]
+--          | move[’w] -> arrive[’w] -> MAP[’w]
+--          | putdown -> putfail -> MAP[’m]
+--          | pickup -> fail -> MAP[’m]),
+-- MAP[’e] = (move[’e] -> arrive[’e] -> MAP[’e]
+--          | move[’w] -> arrive[’m] -> MAP[’m]
+--          | putdown -> putfail -> MAP[’e]
+--          | pickup -> success -> MAP[’e]).
+
+MODULE main
+
+VAR
+  env_loc : {w,m,e};
+  success, fail, putsuccess, putfail : boolean;
+
+ASSIGN
+  init(env_loc) := w;
+  init(success) := FALSE;
+  init(fail) := FALSE;
+
+  next(env_loc) :=
+    case
+      env_loc = w & move_e : m;
+      env_loc = w & move_w : w;
+      env_loc = m & move_e : e;
+      env_loc = m & move_w : w;
+      env_loc = e & move_e : e;
+      env_loc = e & move_w : m;
+      TRUE : env_loc;
+    esac;
+
+  next(success)  := {TRUE, FALSE};
+  next(fail)     := !next(success);
+  next(putsuccess) := {TRUE, FALSE};
+  next(putfail)    := !next(putsuccess);
