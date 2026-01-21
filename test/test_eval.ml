@@ -1,166 +1,136 @@
 open Core
 open Ltl_weaken
-open Why3
-
-let create_prop name =
-  let ps =
-    match Hashtbl.find Lasso.lsymbol_cache name with
-    | Some ps -> ps
-    | None ->
-        let ps = Term.create_psymbol (Ident.id_fresh name) [] in
-        Hashtbl.set Lasso.lsymbol_cache ~key:name ~data:ps;
-        ps
-  in
-  Term.ps_app ps []
 
 let%expect_test "eval true on any state" =
   let states = [ [ ("p", true) ] ] in
   let lasso = Lasso.of_states states 0 in
-  let result = Eval.eval_state lasso 0 Term.t_true in
+  let result = Eval.eval lasso 0 Ltl.PTrue in
   printf "eval(T) = %b\n" result;
   [%expect {| eval(T) = true |}]
 
 let%expect_test "eval false on any state" =
   let states = [ [ ("p", true) ] ] in
   let lasso = Lasso.of_states states 0 in
-  let result = Eval.eval_state lasso 0 Term.t_false in
+  let result = Eval.eval lasso 0 Ltl.PFalse in
   printf "eval(F) = %b\n" result;
   [%expect {| eval(F) = false |}]
 
 let%expect_test "eval conjunction (true && true)" =
   let states = [ [ ("p", true); ("q", true) ] ] in
   let lasso = Lasso.of_states states 0 in
-  let p = create_prop "p" in
-  let q = create_prop "q" in
-  let conj = Term.t_and p q in
-  let result = Eval.eval_state lasso 0 conj in
-  printf "eval(p && q) = %b\n" result;
-  [%expect {| eval(p && q) = true |}]
+  let conj = Parser.Smv.parse_formula "p & q" in
+  let result = Eval.eval lasso 0 conj in
+  printf "eval(p & q) = %b\n" result;
+  [%expect {| eval(p & q) = true |}]
 
 let%expect_test "eval conjunction (true && false)" =
   let states = [ [ ("p", true); ("q", false) ] ] in
   let lasso = Lasso.of_states states 0 in
-  let p = create_prop "p" in
-  let q = create_prop "q" in
-  let conj = Term.t_and p q in
-  let result = Eval.eval_state lasso 0 conj in
-  printf "eval(p && q) = %b\n" result;
-  [%expect {| eval(p && q) = false |}]
+  let conj = Parser.Smv.parse_formula "p & q" in
+  let result = Eval.eval lasso 0 conj in
+  printf "eval(p & q) = %b\n" result;
+  [%expect {| eval(p & q) = false |}]
 
 let%expect_test "eval disjunction (true || false)" =
   let states = [ [ ("p", true); ("q", false) ] ] in
   let lasso = Lasso.of_states states 0 in
-  let p = create_prop "p" in
-  let q = create_prop "q" in
-  let disj = Term.t_or p q in
-  let result = Eval.eval_state lasso 0 disj in
-  printf "eval(p || q) = %b\n" result;
-  [%expect {| eval(p || q) = true |}]
+  let disj = Parser.Smv.parse_formula "p | q" in
+  let result = Eval.eval lasso 0 disj in
+  printf "eval(p | q) = %b\n" result;
+  [%expect {| eval(p | q) = true |}]
 
 let%expect_test "eval negation (not true)" =
   let states = [ [ ("p", true) ] ] in
   let lasso = Lasso.of_states states 0 in
-  let p = create_prop "p" in
-  let neg = Term.t_not p in
-  let result = Eval.eval_state lasso 0 neg in
-  printf "eval(not p) = %b\n" result;
-  [%expect {| eval(not p) = false |}]
+  let neg = Parser.Smv.parse_formula "!p" in
+  let result = Eval.eval lasso 0 neg in
+  printf "eval(!p) = %b\n" result;
+  [%expect {| eval(!p) = false |}]
 
 let%expect_test "eval negation (not false)" =
   let states = [ [ ("p", false) ] ] in
   let lasso = Lasso.of_states states 0 in
-  let p = create_prop "p" in
-  let neg = Term.t_not p in
-  let result = Eval.eval_state lasso 0 neg in
-  printf "eval(not p) = %b\n" result;
-  [%expect {| eval(not p) = true |}]
+  let neg = Parser.Smv.parse_formula "!p" in
+  let result = Eval.eval lasso 0 neg in
+  printf "eval(!p) = %b\n" result;
+  [%expect {| eval(!p) = true |}]
 
 let%expect_test "eval implication (true -> true)" =
   let states = [ [ ("p", true); ("q", true) ] ] in
   let lasso = Lasso.of_states states 0 in
-  let p = create_prop "p" in
-  let q = create_prop "q" in
-  let impl = Term.t_implies p q in
-  let result = Eval.eval_state lasso 0 impl in
+  let impl = Parser.Smv.parse_formula "p -> q" in
+  let result = Eval.eval lasso 0 impl in
   printf "eval(p -> q) = %b\n" result;
   [%expect {| eval(p -> q) = true |}]
 
 let%expect_test "eval implication (true -> false)" =
   let states = [ [ ("p", true); ("q", false) ] ] in
   let lasso = Lasso.of_states states 0 in
-  let p = create_prop "p" in
-  let q = create_prop "q" in
-  let impl = Term.t_implies p q in
-  let result = Eval.eval_state lasso 0 impl in
+  let impl = Parser.Smv.parse_formula "p -> q" in
+  let result = Eval.eval lasso 0 impl in
   printf "eval(p -> q) = %b\n" result;
   [%expect {| eval(p -> q) = false |}]
 
 let%expect_test "eval iff (true <-> true)" =
   let states = [ [ ("p", true); ("q", true) ] ] in
   let lasso = Lasso.of_states states 0 in
-  let p = create_prop "p" in
-  let q = create_prop "q" in
-  let iff = Term.t_iff p q in
-  let result = Eval.eval_state lasso 0 iff in
+  let iff = Parser.Smv.parse_formula "p <-> q" in
+  let result = Eval.eval lasso 0 iff in
   printf "eval(p <-> q) = %b\n" result;
   [%expect {| eval(p <-> q) = true |}]
 
 let%expect_test "eval iff (true <-> false)" =
   let states = [ [ ("p", true); ("q", false) ] ] in
   let lasso = Lasso.of_states states 0 in
-  let p = create_prop "p" in
-  let q = create_prop "q" in
-  let iff = Term.t_iff p q in
-  let result = Eval.eval_state lasso 0 iff in
+  let iff = Parser.Smv.parse_formula "p <-> q" in
+  let result = Eval.eval lasso 0 iff in
   printf "eval(p <-> q) = %b\n" result;
   [%expect {| eval(p <-> q) = false |}]
 
 let%expect_test "eval X" =
   let states = [ [ ("p", true) ]; [ ("p", false) ] ] in
   let lasso = Lasso.of_states states 0 in
-  let p = create_prop "p" in
-  let x = create_prop "X" in
-  let term = Term.t_and x p in
-  let result = Eval.eval_state lasso 0 term in
+  let term = Parser.Smv.parse_formula "X p" in
+  let result = Eval.eval lasso 0 term in
   printf "eval(X (p)) = %b\n" result;
   [%expect {| eval(X (p)) = false |}];
-  let result = Eval.eval_state lasso 1 term in
+  let result = Eval.eval lasso 1 term in
   printf "eval(X (p)) = %b\n" result;
   [%expect {| eval(X (p)) = true |}];
-  let term = Term.t_and x @@ Term.t_not p in
-  let result = Eval.eval_state lasso 0 term in
+  let term = Parser.Smv.parse_formula "X (!p)" in
+  let result = Eval.eval lasso 0 term in
   printf "eval(X (!p)) = %b\n" result;
   [%expect {| eval(X (!p)) = true |}];
-  let term = Term.t_not @@ Term.t_and x p in
-  let result = Eval.eval_state lasso 0 term in
+  let term = Parser.Smv.parse_formula "!(X p)" in
+  let result = Eval.eval lasso 0 term in
   printf "eval(!(X (p))) = %b\n" result;
   [%expect {| eval(!(X (p))) = true |}]
 
-let%expect_test "eval_safety: all states satisfy property" =
+let%expect_test "eval G" =
   let states = [ [ ("p", true) ]; [ ("p", true) ]; [ ("p", true) ] ] in
   let lasso = Lasso.of_states states 1 in
-  let p = create_prop "p" in
-  let result = Eval.eval_safety lasso 0 p in
-  printf "eval_safety(p) from index 0 = %b\n" result;
-  [%expect {| eval_safety(p) from index 0 = true |}]
+  let term = Parser.Smv.parse_formula "G p" in
+  let result = Eval.eval lasso 0 term in
+  printf "eval(G p) from index 0 = %b\n" result;
+  [%expect {| eval(G p) from index 0 = true |}]
 
-let%expect_test "eval_safety: one state violates property" =
+let%expect_test "eval G false" =
   let states = [ [ ("p", true) ]; [ ("p", false) ]; [ ("p", true) ] ] in
   let lasso = Lasso.of_states states 1 in
-  let p = create_prop "p" in
-  let result = Eval.eval_safety lasso 0 p in
-  printf "eval_safety(p) from index 0 = %b\n" result;
-  [%expect {| eval_safety(p) from index 0 = false |}]
+  let term = Parser.Smv.parse_formula "G p" in
+  let result = Eval.eval lasso 0 term in
+  printf "eval(G p) from index 0 = %b\n" result;
+  [%expect {| eval(G p) from index 0 = false |}]
 
-let%expect_test "eval_safety: check from middle of lasso" =
+let%expect_test "eval G check from middle of lasso" =
   let states = [ [ ("p", false) ]; [ ("p", true) ]; [ ("p", true) ] ] in
   let lasso = Lasso.of_states states 1 in
-  let p = create_prop "p" in
-  let result = Eval.eval_safety lasso 1 p in
-  printf "eval_safety(p) from index 1 = %b\n" result;
-  [%expect {| eval_safety(p) from index 1 = true |}]
+  let term = Parser.Smv.parse_formula "G p" in
+  let result = Eval.eval lasso 1 term in
+  printf "eval(G p) from index 1 = %b\n" result;
+  [%expect {| eval(G p) from index 1 = true |}]
 
-let%expect_test "eval_safety with conjunction" =
+let%expect_test "eval G with conjunction" =
   let states =
     [
       [ ("p", true); ("q", true) ];
@@ -169,31 +139,29 @@ let%expect_test "eval_safety with conjunction" =
     ]
   in
   let lasso = Lasso.of_states states 1 in
-  let p = create_prop "p" in
-  let q = create_prop "q" in
-  let conj = Term.t_and p q in
-  let result = Eval.eval_safety lasso 0 conj in
-  printf "eval_safety(p && q) = %b\n" result;
-  [%expect {| eval_safety(p && q) = false |}]
+  let term = Parser.Smv.parse_formula "G (p && q)" in
+  let result = Eval.eval lasso 0 term in
+  printf "eval(G (p && q)) = %b\n" result;
+  [%expect {| eval(G (p && q)) = false |}]
 
-let%expect_test "eval_liveness: some state satisfies property" =
+let%expect_test "eval F" =
   let states = [ [ ("p", false) ]; [ ("p", false) ]; [ ("p", true) ] ] in
   let lasso = Lasso.of_states states 1 in
-  let p = create_prop "p" in
-  let result = Eval.eval_liveness lasso 0 p in
-  printf "eval_liveness(p) from index 0 = %b\n" result;
-  [%expect {| eval_liveness(p) from index 0 = true |}]
+  let term = Parser.Smv.parse_formula "F p" in
+  let result = Eval.eval lasso 0 term in
+  printf "eval(F p) from index 0 = %b\n" result;
+  [%expect {| eval(F p) from index 0 = true |}]
 
-let%expect_test "eval_liveness: no loop state satisfies property" =
+let%expect_test "eval F false" =
   let states = [ [ ("p", true) ]; [ ("p", false) ]; [ ("p", false) ] ] in
   let lasso = Lasso.of_states states 1 in
-  let p = create_prop "p" in
-  let result = Eval.eval_liveness lasso 0 p in
-  printf "eval_liveness(p) from index 0 = %b\n" result;
-  [%expect {| eval_liveness(p) from index 0 = false |}];
-  let result = Eval.eval_liveness lasso 1 p in
-  printf "eval_liveness(p) from index 1 = %b\n" result;
-  [%expect {| eval_liveness(p) from index 1 = false |}];
-  let result = Eval.eval_liveness lasso 2 p in
-  printf "eval_liveness(p) from index 2 = %b\n" result;
-  [%expect {| eval_liveness(p) from index 2 = false |}]
+  let term = Parser.Smv.parse_formula "F p" in
+  let result = Eval.eval lasso 0 term in
+  printf "eval(F p) from index 0 = %b\n" result;
+  [%expect {| eval(F p) from index 0 = false |}];
+  let result = Eval.eval lasso 1 term in
+  printf "eval(F p) from index 1 = %b\n" result;
+  [%expect {| eval(F p) from index 1 = false |}];
+  let result = Eval.eval lasso 2 term in
+  printf "eval(F p) from index 2 = %b\n" result;
+  [%expect {| eval(F p) from index 2 = false |}]

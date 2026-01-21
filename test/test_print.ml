@@ -17,19 +17,19 @@ let make_prop name =
 let prop_term ps = Term.ps_app ps []
 
 let%expect_test "boolean constants" =
-  print_endline (Print.term_to_smv Term.t_true);
+  print_endline (Ltl.to_string Term.t_true);
   [%expect {| TRUE |}];
-  print_endline (Print.term_to_smv Term.t_false);
+  print_endline (Ltl.to_string Term.t_false);
   [%expect {| FALSE |}]
 
 let%expect_test "variables" =
   let var_x = make_var "x" in
   let term_x = Term.t_var var_x in
-  print_endline (Print.term_to_smv term_x);
+  print_endline (Ltl.to_string term_x);
   [%expect {| x |}];
   let var_state = make_var "state" in
   let term_state = Term.t_var var_state in
-  print_endline (Print.term_to_smv term_state);
+  print_endline (Ltl.to_string term_state);
   [%expect {| state |}]
 
 (* Tests with atomic propositions *)
@@ -39,43 +39,43 @@ let%expect_test "atomic propositions" =
   let q = make_prop "q" in
   let p_term = prop_term p in
   let q_term = prop_term q in
-  print_endline (Print.term_to_smv p_term);
+  print_endline (Ltl.to_string p_term);
   [%expect {| p |}];
-  print_endline (Print.term_to_smv q_term);
+  print_endline (Ltl.to_string q_term);
   [%expect {| q |}]
 
 let%expect_test "propositions with AND" =
   let p = make_prop "ready" in
   let q = make_prop "enabled" in
   let formula = Term.t_and (prop_term p) (prop_term q) in
-  print_endline (Print.term_to_smv formula);
+  print_endline (Ltl.to_string formula);
   [%expect {| (ready & enabled) |}]
 
 let%expect_test "propositions with OR" =
   let p = make_prop "req" in
   let q = make_prop "ack" in
   let formula = Term.t_or (prop_term p) (prop_term q) in
-  print_endline (Print.term_to_smv formula);
+  print_endline (Ltl.to_string formula);
   [%expect {| (req | ack) |}]
 
 let%expect_test "propositions with NOT" =
   let p = make_prop "busy" in
   let formula = Term.t_not (prop_term p) in
-  print_endline (Print.term_to_smv formula);
+  print_endline (Ltl.to_string formula);
   [%expect {| !busy |}]
 
 let%expect_test "propositions with IMPLIES" =
   let p = make_prop "request" in
   let q = make_prop "grant" in
   let formula = Term.t_implies (prop_term p) (prop_term q) in
-  print_endline (Print.term_to_smv formula);
+  print_endline (Ltl.to_string formula);
   [%expect {| (!request | grant) |}]
 
 let%expect_test "propositions with IFF" =
   let p = make_prop "ready" in
   let q = make_prop "done" in
   let formula = Term.t_iff (prop_term p) (prop_term q) in
-  print_endline (Print.term_to_smv formula);
+  print_endline (Ltl.to_string formula);
   [%expect {| (ready <-> done) |}]
 
 let%expect_test "complex proposition formula" =
@@ -88,5 +88,5 @@ let%expect_test "complex proposition formula" =
       (Term.t_and (prop_term p) (prop_term q))
       (Term.t_and (Term.t_not (prop_term p)) (prop_term r))
   in
-  print_endline (Print.term_to_smv formula);
+  print_endline (Ltl.to_string formula);
   [%expect {| ((p & q) | (!p & r)) |}]

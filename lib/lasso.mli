@@ -1,12 +1,6 @@
 open Core
-open Why3
 
-type property =
-  | Prop of Term.term
-  | Safety of Term.term
-  | Liveness of Term.term
-
-type state = (property, bool) Hashtbl.t
+type state = (Ltl.any_formula, bool) Hashtbl.t
 type t
 
 val prefix_length : t -> int
@@ -20,9 +14,6 @@ val loop_length : t -> int
 val length : t -> int
 (** [length lasso] returns the total number of states in the lasso trace,
     combining both the prefix and loop. *)
-
-val lsymbol_cache : (string, Term.lsymbol) Hashtbl.t
-(** Global cache for Why3 logical symbols. *)
 
 val of_states : (string * bool) list list -> int -> t
 (** [of_states states loop_point] constructs a lasso trace from a list of states

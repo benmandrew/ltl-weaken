@@ -1,54 +1,25 @@
 %{
   (* SMV Parser for propositional formulae *)
-  open Core
-  open Why3
-
-  (* Helper to create or retrieve a propositional symbol *)
-  let var_term name =
-    match Hashtbl.find Lasso.lsymbol_cache name with
-    | Some ps -> Term.ps_app ps []
-    | None ->
-        let ps = Term.create_psymbol (Ident.id_fresh name) [] in
-        Hashtbl.set Lasso.lsymbol_cache ~key:name ~data:ps;
-        Term.ps_app ps []
-
-  (* A zero-arity predicate to mark the X (next) operator in the AST. *)
-  let x_marker_ps : Term.lsymbol option ref = ref None
-
-  let x_marker () =
-    let ps =
-      match !x_marker_ps with
-      | Some ps -> ps
-      | None ->
-          let ps = Term.create_psymbol (Ident.id_fresh "X") [] in
-          x_marker_ps := Some ps;
-          ps
-    in
-    Term.ps_app ps []
+  open Ltl
 
   (* Helper to apply unary operations *)
   let unary_op op arg =
     match op with
-    | "!" -> Term.t_not arg
+    | "!" -> PNot arg
     | "G" ->
         (* For temporal operators, just return the argument for now *)
         arg
     | "F" -> arg
-    | "X" -> Term.t_and (x_marker ()) arg
+    | "X" -> arg
     | _ -> arg
 
   (* Helper to apply binary operators *)
   let binary_op op left right =
     match op with
-    | "&" -> Term.t_and left right
-    | "|" -> Term.t_or left right
-    | "->" -> Term.t_implies left right
-    | "<->" -> Term.t_iff left right
-    | "=" | "==" -> Term.t_equ left right
-    | "!=" | "<>" -> Term.t_neq left right
-    | "+" | "-" | "*" | "/" | "mod" | "<" | "<=" | ">" | ">=" | "U" | "R" | "W" ->
-        (* Unsupported operators: return left for now *)
-        left
+    | "&" -> PAnd [left; right]
+    | "|" -> POr [left; right]
+    | "->" -> PImply (left, right)
+    | "<->" -> PIff (left, right)
     | _ -> left
 %}
 
@@ -65,7 +36,7 @@
 
 /* Start symbol */
 %start formula
-%type <Why3.Term.term> formula
+%type <Ltl.t> formula
 
 /* Operator precedence and associativity (low to high) */
 %left IFF
@@ -110,7 +81,7 @@ expr:
   | primary             { $1 }
 
 primary:
-  | TRUE                { Term.t_true }
-  | FALSE               { Term.t_false }
-  | IDENT               { var_term $1 }
+  | TRUE                { PTrue }
+  | FALSE               { PFalse }
+  | IDENT               { PAtom $1 }
   | LPAREN expr RPAREN  { $2 }

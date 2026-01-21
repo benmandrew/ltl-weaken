@@ -1,55 +1,12 @@
 open Core
-open Why3
 
-type property =
-  | Prop of Term.term
-  | Safety of Term.term
-  | Liveness of Term.term
-
-let property_to_string = function
-  | Prop term -> Print.term_to_smv term
-  | Safety term -> "G " ^ Print.term_to_smv term
-  | Liveness term -> "G F " ^ Print.term_to_smv term
-
-module Ts = struct
-  include Term
-
-  type t = property
-
-  let compare t t' =
-    match (t, t') with
-    | Prop t1, Prop t2 -> Term.t_compare t1 t2
-    | Safety t1, Safety t2 -> Term.t_compare t1 t2
-    | Liveness t1, Liveness t2 -> Term.t_compare t1 t2
-    | Prop _, _ -> -1
-    | _, Prop _ -> 1
-    | Safety _, _ -> -1
-    | _, Safety _ -> 1
-
-  let sexp_of_t = function
-    | Prop t | Safety t | Liveness t ->
-        Core.Sexp.Atom (Format.asprintf "%a" Pretty.print_term t)
-
-  let hash = function Prop t | Safety t | Liveness t -> Term.t_hash t
-end
-
-type state = (property, bool) Hashtbl.t
+type state = (Ltl.any_formula, bool) Hashtbl.t
 type t = { prefix : state list; loop : state list }
 
 let prefix_length t = List.length t.prefix
 let loop_length t = List.length t.loop
 let length t = prefix_length t + loop_length t
-let lsymbol_cache = Hashtbl.create (module String)
-
-let prop_of name =
-  match Hashtbl.find lsymbol_cache name with
-  | Some ps -> ps
-  | None ->
-      let ps = Term.create_psymbol (Ident.id_fresh name) [] in
-      Hashtbl.set lsymbol_cache ~key:name ~data:ps;
-      ps
-
-let lit_of (name, value) = (Prop (Term.ps_app (prop_of name) []), value)
+let lit_of (name, value) = (Ltl.Any (Ltl.PAtom name), value)
 
 let of_states states loop_idx =
   assert (loop_idx >= 0 && loop_idx < List.length states);
@@ -57,7 +14,8 @@ let of_states states loop_idx =
   let state_prefix = List.take states loop_idx in
   let state_loop = List.drop states loop_idx in
   let state_to_term assigns =
-    assigns |> List.map ~f:lit_of |> Hashtbl.of_alist (module Ts) |> function
+    assigns |> List.map ~f:lit_of |> Hashtbl.of_alist (module Ltl.Any_formula)
+    |> function
     | `Duplicate_key _ -> raise (Invalid_argument "Duplicate variable in state")
     | `Ok pair -> pair
   in
@@ -84,8 +42,8 @@ let get_assignments t =
   t.prefix @ t.loop
   |> List.map ~f:(fun t ->
       Hashtbl.to_alist t
-      |> List.map ~f:(fun (k, v) ->
-          let var_name = property_to_string k in
+      |> List.map ~f:(fun (Any k, v) ->
+          let var_name = Ltl.to_string k in
           (var_name, v)))
 
 let collect_variable_names states =
@@ -158,7 +116,7 @@ let print t =
 
 let print_state state =
   Hashtbl.to_alist state
-  |> List.sort ~compare:(fun (k1, _) (k2, _) -> Ts.compare k1 k2)
-  |> List.iter ~f:(fun (k, v) ->
-      let var_name = property_to_string k in
+  |> List.sort ~compare:(fun (k1, _) (k2, _) -> Ltl.Any_formula.compare k1 k2)
+  |> List.iter ~f:(fun (Ltl.Any k, v) ->
+      let var_name = Ltl.to_string k in
       printf "%s: %b\n" var_name v)

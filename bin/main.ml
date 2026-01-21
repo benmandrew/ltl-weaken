@@ -1,4 +1,4 @@
-open Core
+(* open Core
 open Ltl_weaken
 
 (* Command-line interface using cmdliner *)
@@ -31,4 +31,4 @@ let check_cmd =
 
 let () =
   let cmd = check_cmd in
-  Cmdliner.Cmd.eval cmd |> exit
+  Cmdliner.Cmd.eval cmd |> exit *)

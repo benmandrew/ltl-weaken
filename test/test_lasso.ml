@@ -1,17 +1,5 @@
 open Core
 open Ltl_weaken
-open Why3
-
-let create_prop name =
-  let ps =
-    match Hashtbl.find Lasso.lsymbol_cache name with
-    | Some ps -> ps
-    | None ->
-        let ps = Term.create_psymbol (Ident.id_fresh name) [] in
-        Hashtbl.set Lasso.lsymbol_cache ~key:name ~data:ps;
-        ps
-  in
-  Term.ps_app ps []
 
 let%expect_test "print lasso in tabular format" =
   let states =
@@ -68,16 +56,13 @@ let%expect_test "print lasso after eval" =
     ]
   in
   let lasso = Lasso.of_states states 2 in
-  let p = create_prop "busy" in
-  let x = create_prop "X" in
-  let term = Term.t_and x p in
+  let term = Parser.Smv.parse_formula "X busy" in
   for i = 0 to Lasso.length lasso - 1 do
-    Eval.eval_state lasso i term |> ignore
+    Eval.eval lasso i term |> ignore
   done;
-  let p = create_prop "grant" in
-  let term = Term.t_and x p in
+  let term = Parser.Smv.parse_formula "X grant" in
   for i = 0 to Lasso.length lasso - 1 do
-    Eval.eval_safety lasso i term |> ignore
+    Eval.eval lasso i term |> ignore
   done;
   Lasso.print lasso;
   [%expect
