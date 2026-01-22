@@ -60,20 +60,20 @@ let%expect_test "print lasso after eval" =
   for i = 0 to Lasso.length lasso - 1 do
     Eval.eval lasso i term |> ignore
   done;
-  let term = Parser.Smv.parse_formula "X grant" in
+  let term = Parser.Smv.parse_formula "G (X grant)" in
   for i = 0 to Lasso.length lasso - 1 do
     Eval.eval lasso i term |> ignore
   done;
   Lasso.print lasso;
   [%expect
     {|
-                 0 1 2
-    (X busy)    │●│ │ │
-    (X grant)   │ │●│●│
-    G (X grant) │ │●│●│
-    busy        │ │●│ │
-    grant       │ │ │●│
-    =Lasso=          ⊔
+                   0 1 2
+    (G (X grant)) │ │●│●│
+    (X busy)      │●│ │ │
+    (X grant)     │ │●│●│
+    busy          │ │●│ │
+    grant         │ │ │●│
+    =Lasso=            ⊔
     |}]
 
 let%expect_test "get states" =

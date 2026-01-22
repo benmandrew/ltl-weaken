@@ -10,9 +10,17 @@ let get_next_index lasso i =
     prefix_len + ((next_i - prefix_len) % loop_len)
   else next_i
 
-(* Main evaluation function *)
 let rec eval (lasso : Lasso.t) (i : int) (Ltl.Any formula : Ltl.any_formula) :
     bool =
+  let state = Lasso.get_state lasso i in
+  match Hashtbl.find state (Ltl.Any formula) with
+  | Some v -> v
+  | None ->
+      let res = eval_aux lasso i (Ltl.Any formula) in
+      Hashtbl.set state ~key:(Ltl.Any formula) ~data:res;
+      res
+
+and eval_aux (lasso : Lasso.t) (i : int) (Ltl.Any formula : Ltl.any_formula) =
   match formula with
   | Ltl.PTrue -> true
   | Ltl.PFalse -> false
