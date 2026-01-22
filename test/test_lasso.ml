@@ -56,11 +56,11 @@ let%expect_test "print lasso after eval" =
     ]
   in
   let lasso = Lasso.of_states states 2 in
-  let term = Parser.Smv.parse_formula "X busy" in
+  let term = Parser.Parse_ltl.parse_formula "X busy" in
   for i = 0 to Lasso.length lasso - 1 do
     Eval.eval lasso i term |> ignore
   done;
-  let term = Parser.Smv.parse_formula "G (X grant)" in
+  let term = Parser.Parse_ltl.parse_formula "G (X grant)" in
   for i = 0 to Lasso.length lasso - 1 do
     Eval.eval lasso i term |> ignore
   done;

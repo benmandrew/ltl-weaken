@@ -1,12 +1,12 @@
 open Core
 
-(** Parse SMV propositional formulae into Why3 terms *)
+(** Parse LTL propositional formulae *)
 
-(** Parse a formula string in SMV syntax *)
+(** Parse a formula string in LTL syntax *)
 let parse_formula (input : string) : Ltl.any_formula =
   let lexbuf = Lexing.from_string input in
-  try Smv_parser.formula Smv_lexer.token lexbuf with
-  | Smv_parser.Error ->
+  try Ltl_parser.formula Ltl_lexer.token lexbuf with
+  | Ltl_parser.Error ->
       let pos = lexbuf.lex_curr_pos in
       let msg =
         sprintf "Parse error at position %d: '%s'" pos
@@ -26,6 +26,6 @@ let parse_formulae (input : string) : Ltl.any_formula list =
 (** Parse an identifier from a variable reference *)
 let parse_ident (input : string) : string =
   let lexbuf = Lexing.from_string (String.strip input) in
-  match Smv_lexer.token lexbuf with
-  | Smv_parser.IDENT id -> id
+  match Ltl_lexer.token lexbuf with
+  | Ltl_parser.IDENT id -> id
   | _ -> invalid_arg (sprintf "Expected identifier, got: %s" input)

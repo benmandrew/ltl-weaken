@@ -1,5 +1,5 @@
 %{
-  (* SMV Parser for propositional formulae *)
+  (* Parser for LTL formulae *)
 
   (* Helper to apply unary operations *)
   let unary_op op arg =
