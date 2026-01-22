@@ -49,6 +49,10 @@ val p_until : any_formula -> any_formula -> any_formula
 val p_release : any_formula -> any_formula -> any_formula
 val p_globally : any_formula -> any_formula
 val p_finally : any_formula -> any_formula
+
+(* Runtime type checking *)
+val is_prop : any_formula -> bool
+val is_temporal : any_formula -> bool
 val to_string : 'k formula -> string
 val to_string_any : any_formula -> string
 val index : 'k formula -> int list -> any_formula

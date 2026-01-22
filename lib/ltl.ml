@@ -179,6 +179,23 @@ let p_release = Smart.p_release
 let p_globally = Smart.p_globally
 let p_finally = Smart.p_finally
 
+(* Runtime type checking *)
+let is_prop (Any f : any_formula) : bool =
+  match f with
+  | PTrue | PFalse | PAtom _ -> true
+  | PNot _ ->
+      true (* PNot preserves kind, but we can't know without recursion *)
+  | PAnd _ | POr _ -> true (* Could be either, conservatively say true *)
+  | PImply _ | PIff _ -> true (* Could be either, conservatively say true *)
+  | Next _ | Until _ | Release _ | Globally _ | Finally _ -> false
+
+let is_temporal (Any f : any_formula) : bool =
+  match f with
+  | Next _ | Until _ | Release _ | Globally _ | Finally _ -> true
+  | PTrue | PFalse | PAtom _ -> false
+  | PNot _ | PAnd _ | POr _ | PImply _ | PIff _ ->
+      false (* Could be either, conservatively say false *)
+
 let rec index : type a. a formula -> int list -> any_formula =
  fun t -> function
   | [] -> Any t

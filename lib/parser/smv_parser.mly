@@ -21,8 +21,6 @@
     | "R" -> Ltl.p_release left right
     | "W" -> Ltl.p_release left right  (* W is weak until, not implemented *)
     | _ -> left
-
-
 %}
 
 /* Terminal symbols */

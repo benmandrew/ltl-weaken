@@ -1,6 +1,6 @@
 (library
  (name test_ltl)
- (modules test_smv_parser test_cex test_lasso test_eval)
+ (modules test_smv_parser test_cex test_lasso test_eval test_ltl)
  (libraries ltl_weaken core why3)
  (inline_tests)
  (preprocess
