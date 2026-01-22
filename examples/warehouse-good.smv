@@ -68,3 +68,19 @@ ASSIGN
   next(putsuccess) := {TRUE, FALSE};
   next(putfail)    := {TRUE, FALSE};
 
+-- Fluent LTL goals:
+--
+-- fluent BEEN_PICKING = <success, {reset}>
+-- fluent BEEN_PUTTING = <putsuccess, {reset}>
+-- fluent ENDED = <ended, reset>
+-- ltl_property BOUNDLIVE = [](ENDED -> (BEEN_PICKING && BEEN_PUTTING))
+-- const MaxTime = 6
+-- COUNT = COUNT[0],
+-- COUNT[i:Times] = (CONT -> count[i] -> COUNT[i+1] | ended -> reset -> COUNT),
+-- COUNT[MaxTime+1] = ERROR.
+
+LTLSPEC !been_picking & !been_putting & !ended_f;
+LTLSPEC G (X been_picking <-> (success | (been_picking & !reset)));
+LTLSPEC G (X been_putting <-> (putsuccess | (been_putting & !reset)));
+LTLSPEC G (X ended_f <-> (ended | (ended_f & !reset)));
+LTLSPEC G (ended_f -> F (been_picking & been_putting));

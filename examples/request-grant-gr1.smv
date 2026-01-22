@@ -3,7 +3,6 @@ MODULE main
 VAR
   req     : boolean;           -- environment input
   state   : {IDLE, BUSY};      -- controller state
-  pending : boolean;           -- auxiliary GR(1) bookkeeping variable
 
 DEFINE
   grant := (state = IDLE) & req;
@@ -12,7 +11,6 @@ DEFINE
 ASSIGN
   -- Initial state
   init(state)   := IDLE;
-  init(pending) := FALSE;
 
   -- Controller state machine
   -- IDLE: can transition to BUSY when grant is true
@@ -24,13 +22,8 @@ ASSIGN
       TRUE              : IDLE;
     esac;
 
-  -- Pending obligation logic (GR(1) auxiliary variable encoding)
-  -- Tracks deferred requests that haven't been granted yet
-  next(pending) :=
-    case
-      grant            : FALSE;  -- grant clears the pending obligation
-      !req             : FALSE;  -- no request means no pending obligation
-      req              : TRUE;   -- request creates obligation (only if grant=false)
-      pending          : TRUE;   -- pending obligation persists until grant
-      TRUE             : FALSE;
-    esac;
+LTLSPEC G (grant -> (req & !busy));      -- safety: only grant when requested and idle
+LTLSPEC G (grant -> X busy);             -- busy starts after grant
+LTLSPEC G (busy  -> X !busy);            -- busy lasts exactly one step
+LTLSPEC G (req -> F grant);              -- liveness: every request eventually gets a grant
+JUSTICE !req;                            -- environment justice: req is disabled infinitely often
