@@ -1,54 +1,25 @@
 %{
   (* SMV Parser for propositional formulae *)
-  open Core
-  open Why3
-
-  (* Helper to create or retrieve a propositional symbol *)
-  let var_term name =
-    match Hashtbl.find Lasso.lsymbol_cache name with
-    | Some ps -> Term.ps_app ps []
-    | None ->
-        let ps = Term.create_psymbol (Ident.id_fresh name) [] in
-        Hashtbl.set Lasso.lsymbol_cache ~key:name ~data:ps;
-        Term.ps_app ps []
-
-  (* A zero-arity predicate to mark the X (next) operator in the AST. *)
-  let x_marker_ps : Term.lsymbol option ref = ref None
-
-  let x_marker () =
-    let ps =
-      match !x_marker_ps with
-      | Some ps -> ps
-      | None ->
-          let ps = Term.create_psymbol (Ident.id_fresh "X") [] in
-          x_marker_ps := Some ps;
-          ps
-    in
-    Term.ps_app ps []
 
   (* Helper to apply unary operations *)
   let unary_op op arg =
     match op with
-    | "!" -> Term.t_not arg
-    | "G" ->
-        (* For temporal operators, just return the argument for now *)
-        arg
-    | "F" -> arg
-    | "X" -> Term.t_and (x_marker ()) arg
+    | "!" -> Ltl.p_not arg
+    | "G" -> Ltl.p_globally arg
+    | "F" -> Ltl.p_finally arg
+    | "X" -> Ltl.p_next arg
     | _ -> arg
 
   (* Helper to apply binary operators *)
   let binary_op op left right =
     match op with
-    | "&" -> Term.t_and left right
-    | "|" -> Term.t_or left right
-    | "->" -> Term.t_implies left right
-    | "<->" -> Term.t_iff left right
-    | "=" | "==" -> Term.t_equ left right
-    | "!=" | "<>" -> Term.t_neq left right
-    | "+" | "-" | "*" | "/" | "mod" | "<" | "<=" | ">" | ">=" | "U" | "R" | "W" ->
-        (* Unsupported operators: return left for now *)
-        left
+    | "&" -> Ltl.p_and [left; right]
+    | "|" -> Ltl.p_or [left; right]
+    | "->" -> Ltl.p_imply left right
+    | "<->" -> Ltl.p_iff left right
+    | "U" -> Ltl.p_until left right
+    | "R" -> Ltl.p_release left right
+    | "W" -> Ltl.p_release left right  (* W is weak until, not implemented *)
     | _ -> left
 %}
 
@@ -65,7 +36,7 @@
 
 /* Start symbol */
 %start formula
-%type <Why3.Term.term> formula
+%type <Ltl.any_formula> formula
 
 /* Operator precedence and associativity (low to high) */
 %left IFF
@@ -110,7 +81,7 @@ expr:
   | primary             { $1 }
 
 primary:
-  | TRUE                { Term.t_true }
-  | FALSE               { Term.t_false }
-  | IDENT               { var_term $1 }
+  | TRUE                { Ltl.Any PTrue }
+  | FALSE               { Ltl.Any PFalse }
+  | IDENT               { Ltl.Any (PAtom $1) }
   | LPAREN expr RPAREN  { $2 }

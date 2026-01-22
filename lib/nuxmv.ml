@@ -41,7 +41,7 @@ let write_model ~tmp_dir model_path spec =
   let tmp_model_path = Filename.concat tmp_dir model_filename in
   let buf = Buffer.create 512 in
   List.iter ~f:(Buffer.add_string buf)
-    [ "\nLTLSPEC "; Gr1.to_smv_ltl spec; "\n" ];
+    [ "\nLTLSPEC "; Ltl.to_string spec; "\n" ];
   Out_channel.with_file tmp_model_path ~f:(fun oc ->
       Out_channel.output_string oc (In_channel.read_all model_path);
       Out_channel.output_string oc (Buffer.contents buf))
