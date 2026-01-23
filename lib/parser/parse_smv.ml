@@ -6,7 +6,12 @@ open Core
 let extract_ltlspecs (content : string) : string list =
   let lines = String.split_lines content in
   List.filter_map lines ~f:(fun line ->
-      let trimmed = String.strip line in
+      let trimmed =
+        match String.substr_index line ~pattern:"--" with
+        | None -> String.strip line
+        | Some i ->
+            String.drop_suffix line (String.length line - i) |> String.strip
+      in
       (* Match lines that start with LTLSPEC (case-insensitive) *)
       if String.is_prefix trimmed ~prefix:"LTLSPEC" then
         (* Extract the formula part after "LTLSPEC" *)

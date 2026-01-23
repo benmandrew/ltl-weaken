@@ -39,12 +39,19 @@ let write_commands ~tmp_dir =
 
 let write_model ~tmp_dir model_path spec =
   let tmp_model_path = Filename.concat tmp_dir model_filename in
-  let buf = Buffer.create 512 in
-  List.iter ~f:(Buffer.add_string buf)
-    [ "\nLTLSPEC "; Ltl.to_string spec; "\n" ];
+  let without_ltlspecs =
+    In_channel.read_lines model_path
+    |> List.filter ~f:(fun line ->
+        let trimmed = String.strip line in
+        not (String.is_prefix trimmed ~prefix:"LTLSPEC"))
+    |> String.concat ~sep:"\n"
+  in
   Out_channel.with_file tmp_model_path ~f:(fun oc ->
-      Out_channel.output_string oc (In_channel.read_all model_path);
-      Out_channel.output_string oc (Buffer.contents buf))
+      Out_channel.output_string oc without_ltlspecs;
+      List.iter
+        ~f:(fun (Ltl.Any p) ->
+          Out_channel.output_string oc ("LTLSPEC " ^ Ltl.to_string p ^ "\n"))
+        spec)
 
 let read_file_if_exists path =
   try Some (In_channel.read_all path) with Sys_error _ -> None
@@ -68,10 +75,10 @@ let run_nuxmv ~tmp_dir =
   with e ->
     Error (127, "", sprintf "Failed to run nuXmv: %s" (Exn.to_string e))
 
-let check model_path gr1 =
+let check model_path spec =
   let tmp_dir = get_tmp_dir () in
   write_commands ~tmp_dir;
-  write_model ~tmp_dir model_path gr1;
+  write_model ~tmp_dir model_path spec;
   match run_nuxmv ~tmp_dir with
   | Ok (out, _err) -> (
       if
