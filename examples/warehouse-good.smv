@@ -23,14 +23,19 @@
 MODULE main
 
 VAR
-  loc        : {w, m, e};
-  arrive_w  : boolean;
-  arrive_m  : boolean;
-  arrive_e  : boolean;
-  success   : boolean;
-  fail      : boolean;
-  putsuccess: boolean;
-  putfail   : boolean;
+  loc          : {w, m, e};
+  arrive_w     : boolean;
+  arrive_m     : boolean;
+  arrive_e     : boolean;
+  success      : boolean;
+  fail         : boolean;
+  putsuccess   : boolean;
+  putfail      : boolean;
+  been_picking : boolean;
+  been_putting : boolean;
+  ended_f      : boolean;
+  reset        : boolean;
+  ended        : boolean;
 
 ASSIGN
   -- Initial location (arbitrary but fixed)
@@ -67,6 +72,24 @@ ASSIGN
 
   next(putsuccess) := {TRUE, FALSE};
   next(putfail)    := {TRUE, FALSE};
+
+  -- Fluent: tracks if pickup ever succeeded
+  init(been_picking) := FALSE;
+  next(been_picking) := success | (been_picking & !reset);
+
+  -- Fluent: tracks if putdown ever succeeded
+  init(been_putting) := FALSE;
+  next(been_putting) := putsuccess | (been_putting & !reset);
+
+  -- Fluent: tracks if process ended
+  init(ended_f) := FALSE;
+  next(ended_f) := ended | (ended_f & !reset);
+
+  -- Control signals: arbitrary
+  init(reset) := FALSE;
+  init(ended) := FALSE;
+  next(reset) := {TRUE, FALSE};
+  next(ended) := {TRUE, FALSE};
 
 -- Fluent LTL goals:
 --

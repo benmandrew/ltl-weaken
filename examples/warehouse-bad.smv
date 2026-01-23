@@ -24,8 +24,15 @@ MODULE main
 
 VAR
   env_loc : {w,m,e};
-  success, fail, putsuccess, putfail : boolean;
-  picked : boolean;
+  success    : boolean;
+  fail       : boolean;
+  putsuccess : boolean;
+  putfail    : boolean;
+  picked     : boolean;
+  move_e     : boolean;
+  move_w     : boolean;
+  putdown    : boolean;
+  pickup     : boolean;
 
 ASSIGN
   init(env_loc) := w;
