@@ -1,0 +1,41 @@
+MODULE main
+
+VAR
+  input : boolean;
+  cut : boolean;
+  assemble : boolean;
+  polish : boolean;
+  output : boolean;
+
+ASSIGN
+  -- Initial state
+  init(input) := FALSE;
+  init(cut) := FALSE;
+  init(assemble) := FALSE;
+  init(polish) := FALSE;
+  init(output) := FALSE;
+
+  -- Environment
+  next(input) := {TRUE, FALSE};
+
+  -- System: make progress deterministically and keep stages latched
+  next(cut) := input | cut;
+  next(assemble) := cut | assemble;
+  next(polish) := assemble | polish;
+  next(output) := polish | output;
+
+-- Environment assumption: input eventually occurs
+JUSTICE input;
+
+-- Liveness properties
+LTLSPEC G (input -> F cut);
+LTLSPEC G (cut -> F assemble);
+LTLSPEC G (assemble -> F polish);
+LTLSPEC G (polish -> F output);
+LTLSPEC G F output;
+
+-- Ordering properties
+LTLSPEC !cut U input;
+LTLSPEC !assemble U cut;
+LTLSPEC !polish U assemble;
+LTLSPEC !output U polish;
